@@ -17,7 +17,7 @@
 if [[ ${+zsh_loaded_plugins} == 0 || $zsh_loaded_plugins[(I)*/command-server] == 0 || \
     -z $ZSRV_WORK_DIR || -z $ZSRV_ID ]]; then
     typeset -gx ZSRV_WORK_DIR ZSRV_ID
-    : ${ZSRV_WORK_DIR:=$0:h} ${ZSRV_ID:=command}
+    : ${ZSRV_WORK_DIR:=$0:h} ${ZSRV_ID:=cmd}
     export ZSRV_WORK_DIR ZSRV_ID
 fi
 ZSRV_WORK_DIR=${ZSRV_WORK_DIR%/.}
@@ -27,7 +27,11 @@ ZSRV_WORK_DIR=${ZSRV_WORK_DIR%/.}
 msg() {
     # No redundancy – reuse…
     $Plugins[CMD_DIR]/functions/msg "$@" \
-        >>!$srv_logfile >>!$srv_loclogfile >>!$srv_cachelogfile;
+         >>!$srv_loclogfile >>!$srv_cachelogfile;
+}
+
+run_command() {
+    builtin eval "$*"
 }
 
 # Own global and exported variables.
@@ -41,8 +45,7 @@ Plugins+=( CMD_DIR "${0:h}"
     CMD_CONF_INTERVAL "${CMD_CONF_INTERVAL:=5}"
     CMD_CONF_DIRS "$CMD_CONF_DIRS"
     CMD_CONF_ARGS "$CMD_CONF_ARGS"
-    CMD_CONF_PAUSE_AFTER "${CMD_CONF_PAUSE_AFTER:=30}" 
-    CMD_CONF_SETUP_ALIAS "$CMD_CONF_SETUP_ALIAS" )
+    CMD_CONF_PAUSE_AFTER "${CMD_CONF_PAUSE_AFTER:=30}" )
 
 export CMD_DIR CMD_CONF_INTERVAL CMD_CONF_DIRS \
     CMD_CONF_ARGS CMD_CONF_PAUSE_AFTER CMD_CONF_SETUP_ALIAS
@@ -81,11 +84,14 @@ if [[ -r $config ]]; then
     builtin trap 'kill -INT $ZSRV_PID; command sleep 1; builtin exit 1' HUP
     () {
         emulate -L zsh -o multios
+        local -a cmd=( command $ZSRV_THIS_DIR/command-server $config \
+                "&>>!$srv_loclogfile" "&>>!$srv_cachelogfile" "&" )
+
         # Output to three locations, one under Zinit home, second
         # in the plugin directory, third under ZICACHE/../{service-name}.log.0
         command mkdir -p $srv_cachelogfile:h
-        command $ZSRV_THIS_DIR/command-server $config \
-                            &>>!$srv_loclogfile &>>!$srv_cachelogfile &
+        repeat 1 { run_command "${cmd[@]}" }
+
         # Remember PID of the server.
         ZSRV_PID=$!
     }

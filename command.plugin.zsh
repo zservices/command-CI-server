@@ -32,8 +32,6 @@ autoload -Uz zcommand
 
 zmodload zsh/stat zsh/datetime zsh/system
 
-if [[ -n $CMD_CONF_SETUP_ALIAS && $CMD_CONF_SETUP_ALIAS != (no|false|0) ]]; then
-    alias command=zcommand
-fi
+alias zcmd=zcommand
 
 # vim:ft=zsh:tw=80:sw=4:sts=4:et:foldmarker=[[[,]]]

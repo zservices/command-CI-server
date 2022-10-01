@@ -7,8 +7,8 @@
 # script or as an autoload function.
 
 # Set the base and typically useful options
-emulate -L zsh
-setopt extendedglob warncreateglobal typesetsilent noshortloops \
+builtin emulate -L zsh
+builtin setopt extendedglob warncreateglobal typesetsilent noshortloops \
         rcquotes noautopushd multios
 
 # Run as script? ZSH_SCRIPT is a Zsh 5.3 addition
@@ -37,7 +37,7 @@ CMD_CONF_DIRS=${CMD_CONF_DIRS//(#b)((#s)|:)\~/$match[1]$HOME}
 
 # Obtains the command to run and full path to log
 # in its directory and outputs to it plus two other
-# locations (/tmp and ~/.config/mksrv)
+# locations (/tmp and ~/.config/csrv)
 run_command()
 {
     # In case running bare script, without plugin manager
@@ -68,11 +68,13 @@ local -TUx CMD_CONF_DIRS in_src_dirs
 local -TUx SRC_DIRS src_dirs
 local REPLY prj tpe prev_tpe datfle
 integer i count lockfd
+local -a tmp
+
 # A hash to select target file without an if.
-local -A Hash=( null .mksrv-last-null
-                clean .mksrv-last-clean
-                warn .mksrv-last-warn
-                err .mksrv-last-err ) \
+local -A Hash=( null .csrv-last-null
+                clean .csrv-last-clean
+                warn .csrv-last-warn
+                err .csrv-last-err ) \
                 NCnt Data Counts # Separate compilation counts per project
                                  # and of temporary file names.
 
@@ -85,15 +87,18 @@ if [[ -z ${CMD_CONF_DIRS##[[:space:]]##} ]]; then
     msg {208}Error{39}:{70} No directories of projects given, \
         nothing to manage, exiting…
 fi
+
 # Iterate over given dirs.
 for prj in $in_src_dirs; do
+    tmp=( $prj/*.ini )
     if [[ ! -d $prj || ! -r $prj ]]; then
         msg {208}Error{39}:{70} Directory \`{dir}$prj{70}\` \
             incorrect, skipping…
-    elif [[ ! -r $prj/Makefile ]]; then
-        msg {208}Error{39}:{70} Directory \`{dir}$prj{70}\` \
-            doesn\'t contain a Makefile, skipping…
     else
+        if [[ -z $prj ]]; then
+            msg {208}Warning{39}:{70} Directory \`{dir}$prj{70}\` \
+                doesn\'t contain any command definitions.
+        fi
         src_dirs+=( $prj )
     fi
 done
@@ -106,7 +111,7 @@ fi
 
 # Save the processed value and other Plugins hash fields.
 Plugins[CMD_CONF_DIRS]=$SRC_DIRS
-Plugins[CMD_LOCK_FILE]=.mksrv-upmost
+Plugins[CMD_LOCK_FILE]=.csrv-upmost
 Plugins[CMD_CONF_INTERVAL]=${CMD_CONF_INTERVAL:=5}
 # Split the command args by tying it with array `args`
 local -T CMD_CONF_ARGS args
@@ -126,7 +131,7 @@ local command=command
 
 # First unloack sleeps.
 for prj in $src_dirs; do
-    command rm -f $prj/.mksrv-sleep
+    command rm -f $prj/.csrv-sleep
 done
 while ((1)); do
     sleep $Plugins[CMD_CONF_INTERVAL]
@@ -138,11 +143,11 @@ while ((1)); do
     #
     for prj in $src_dirs; do
         i+=1
-        if [[ ! -f $prj/.mksrv-sleep && $NCnt[$prj] -ge Plugins[CMD_CONF_PAUSE_AFTER] ]]; then
+        if [[ ! -f $prj/.csrv-sleep && $NCnt[$prj] -ge Plugins[CMD_CONF_PAUSE_AFTER] ]]; then
             msg %B{55}Resuming operation "({208}requested{55})" for {69}$prj
             NCnt[$prj]=0
         fi
-        [[ -f $prj/.mksrv-sleep ]] && continue
+        [[ -f $prj/.csrv-sleep ]] && continue
 
         #
         # (Re-)Generate the command's temp output file name if needed.
@@ -150,7 +155,7 @@ while ((1)); do
 
         if [[ -z $Data[$prj] ]]; then
             count=$Counts[$prj]+1
-            Data[$prj]=$(mktemp /tmp/mksrv-$count-for-$prj:t.XXX)
+            Data[$prj]=$(mktemp /tmp/csrv-$count-for-$prj:t.XXX)
             msg %B{208}MAKE-SERVER%b%f: Project %B{70}$prj:t%f%b \
                         new build %B{140}\#$count%f%b initiated.
         fi
@@ -161,7 +166,7 @@ while ((1)); do
                 lockfd=1337
                 if ! zsystem flock -f lockfd -t 0 $prj/$Plugins[CMD_LOCK_FILE]&>/dev/null
                 then
-                    if (($?==2)) || [[ -f $prj/.mksrv-lock ]]; then
+                    if (($?==2)) || [[ -f $prj/.csrv-lock ]]; then
                         msg {208}Warning:%f waiting for manual, non-managed \
                             {39}command%f to finish…
                         sleep 1
@@ -178,9 +183,9 @@ while ((1)); do
         # Three locations: /tmp, ~/.cache/…, and project dir
         # via a refactored function that outputs to them.
         repeat 1 { run_command "$command -C $prj" $prj/$datfle ${=args[i]} }
-        print ongoing $datfle $REPLY >! $prj/.mksrv-state
+        print ongoing $datfle $REPLY >! $prj/.csrv-state
         wait $REPLY
-        print finished $datfle >! $prj/.mksrv-state
+        print finished $datfle >! $prj/.csrv-state
 
         #
         # Examine and move the output and set status files.
@@ -206,7 +211,7 @@ while ((1)); do
         # Check for change to update counts and temp files.
         #
 
-        { prev_tpe=${$(<$prj/.mksrv-upmost)[1]};} &>/dev/null
+        { prev_tpe=${$(<$prj/.csrv-upmost)[1]};} &>/dev/null
 
         # Update count of distinct events ignoring the null runs
         # and also request a new temporary file generation by Data[]=.
@@ -222,7 +227,7 @@ while ((1)); do
         # Store final state and move the file.
         command mv $datfle $prj/$Hash[$tpe]
         if ! [[ $tpe == null && $prev_tpe == (warn|clean) ]]; then
-            print $tpe $datfle:t $Hash[$tpe]>!$prj/.mksrv-upmost
+            print $tpe $datfle:t $Hash[$tpe]>!$prj/.csrv-upmost
         fi
         msg {208}MAKE-SERVER:%f Build of {39}$prj:t%f finished with result: %B{140}$tpe%f.
         # Remove the output files, whose paths are known
@@ -235,7 +240,7 @@ while ((1)); do
         if (( NCnt[$prj] >= $Plugins[CMD_CONF_PAUSE_AFTER] )); then
             msg %B{55}No change {208}$NCnt[$prj]{55} runs for project \
                 {69}$prj{55} occured, suspending it…
-            print $$ >! $prj/.mksrv-sleep
+            print $$ >! $prj/.csrv-sleep
         fi
 
     done
