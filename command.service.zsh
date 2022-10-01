@@ -14,10 +14,10 @@
 # Allow running the plugin as script if one desires (e.g. for debugging).
 # The if checks if loaded from plugin manager or if the standard
 # ZSRV_* vars are provided by it.
-if [[ ${+zsh_loaded_plugins} == 0 || $zsh_loaded_plugins[(I)*/make-server] == 0 || \
+if [[ ${+zsh_loaded_plugins} == 0 || $zsh_loaded_plugins[(I)*/command-server] == 0 || \
     -z $ZSRV_WORK_DIR || -z $ZSRV_ID ]]; then
     typeset -gx ZSRV_WORK_DIR ZSRV_ID
-    : ${ZSRV_WORK_DIR:=$0:h} ${ZSRV_ID:=make}
+    : ${ZSRV_WORK_DIR:=$0:h} ${ZSRV_ID:=command}
     export ZSRV_WORK_DIR ZSRV_ID
 fi
 ZSRV_WORK_DIR=${ZSRV_WORK_DIR%/.}
@@ -26,43 +26,43 @@ ZSRV_WORK_DIR=${ZSRV_WORK_DIR%/.}
 # Implemented by `msg` function/script.
 msg() {
     # No redundancy – reuse…
-    $Plugins[MSERV_DIR]/functions/msg "$@" \
+    $Plugins[CMD_DIR]/functions/msg "$@" \
         >>!$srv_logfile >>!$srv_loclogfile >>!$srv_cachelogfile;
 }
 
 # Own global and exported variables.
 typeset -gx ZERO=$0 ZSRV_THIS_DIR=${0:h} \
     ZSRV_THIS_CACHE=${${ZSH_CACHE_DIR:+$ZSH_CACHE_DIR:h}:-${XDG_CACHE-HOME:-$HOME/.cache}}
-ZSRV_THIS_CACHE+=/makesrv
+ZSRV_THIS_CACHE+=/commandsrv
 
 integer -gx ZSRV_PID
 typeset -gA Plugins
-Plugins+=( MSERV_DIR "${0:h}"
-    MSERV_CONF_INTERVAL "${MSERV_CONF_INTERVAL:=5}"
-    MSERV_CONF_DIRS "$MSERV_CONF_DIRS"
-    MSERV_CONF_ARGS "$MSERV_CONF_ARGS"
-    MSERV_CONF_PAUSE_AFTER "${MSERV_CONF_PAUSE_AFTER:=30}" 
-    MSERV_CONF_SETUP_ALIAS "$MSERV_CONF_SETUP_ALIAS" )
+Plugins+=( CMD_DIR "${0:h}"
+    CMD_CONF_INTERVAL "${CMD_CONF_INTERVAL:=5}"
+    CMD_CONF_DIRS "$CMD_CONF_DIRS"
+    CMD_CONF_ARGS "$CMD_CONF_ARGS"
+    CMD_CONF_PAUSE_AFTER "${CMD_CONF_PAUSE_AFTER:=30}" 
+    CMD_CONF_SETUP_ALIAS "$CMD_CONF_SETUP_ALIAS" )
 
-export MSERV_DIR MSERV_CONF_INTERVAL MSERV_CONF_DIRS \
-    MSERV_CONF_ARGS MSERV_CONF_PAUSE_AFTER MSERV_CONF_SETUP_ALIAS
+export CMD_DIR CMD_CONF_INTERVAL CMD_CONF_DIRS \
+    CMD_CONF_ARGS CMD_CONF_PAUSE_AFTER CMD_CONF_SETUP_ALIAS
 
 local pidfile=$ZSRV_WORK_DIR/$ZSRV_ID.pid \
         srv_loclogfile=$ZSRV_THIS_DIR/$ZSRV_ID.log \
         srv_cachelogfile=$ZSRV_THIS_CACHE/$ZSRV_ID.log \
-        config=${XDG_CONFIG_HOME:-$HOME/.config}/makesrv/make-server.conf
+        config=${XDG_CONFIG_HOME:-$HOME/.config}/commandsrv/command-server.conf
 
 command mkdir -p $config:h
 
 # Test to detect lack of service'' ice if loaded from a plugin manager.
 if (( !${+ZSRV_WORK_DIR} || !${+ZSRV_ID} )); then
-    msg {208}Error{39}:{70} plugin \`{174}zservices/make-server{70}\` needs to be loaded as service, aborting.
+    msg {208}Error{39}:{70} plugin \`{174}zservices/command-server{70}\` needs to be loaded as service, aborting.
     return 1
 fi
 
 if [[ ! -f $config ]]; then
-    command cp -f $ZSRV_THIS_DIR/make-server.conf $config || \
-        config=$ZSRV_THIS_DIR/make-server.conf
+    command cp -f $ZSRV_THIS_DIR/command-server.conf $config || \
+        config=$ZSRV_THIS_DIR/command-server.conf
 fi
 
 msg ZSERVICE: Using config: $config
@@ -71,10 +71,10 @@ if [[ -r $config ]]; then
     { local pid=$(<$pidfile); } 2>/dev/null
     if [[ ${+commands[pkill]} -eq 1 && $pid = <-> && $pid -gt 0 ]]; then
         if command pkill -HUP -x -F $pidfile; then
-            msg ZSERVICE: Stopped previous make-server instance, PID: $pid
+            msg ZSERVICE: Stopped previous command-server instance, PID: $pid
             LANG=C sleep 1.5
         else
-            noglob msg ZSERVICE: Previous make-server instance (PID:$pid) not running.
+            noglob msg ZSERVICE: Previous command-server instance (PID:$pid) not running.
         fi
     fi
 
@@ -84,7 +84,7 @@ if [[ -r $config ]]; then
         # Output to three locations, one under Zinit home, second
         # in the plugin directory, third under ZICACHE/../{service-name}.log.0
         command mkdir -p $srv_cachelogfile:h
-        command $ZSRV_THIS_DIR/make-server $config \
+        command $ZSRV_THIS_DIR/command-server $config \
                             &>>!$srv_loclogfile &>>!$srv_cachelogfile &
         # Remember PID of the server.
         ZSRV_PID=$!
@@ -94,6 +94,6 @@ if [[ -r $config ]]; then
     LANG=C command sleep 0.7
     builtin return 0
 else
-    msg ZSERVICE: No readable make-server.conf found, make-server did not run 
+    msg ZSERVICE: No readable command-server.conf found, command-server did not run 
     builtin return 1
 fi

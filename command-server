@@ -12,7 +12,7 @@ setopt extendedglob warncreateglobal typesetsilent noshortloops \
         rcquotes noautopushd multios
 
 # Run as script? ZSH_SCRIPT is a Zsh 5.3 addition
-if [[ $0 != make-server || -n $ZSH_SCRIPT ]]; then
+if [[ $0 != command-server || -n $ZSH_SCRIPT ]]; then
     # Handle $0 according to the Zsh Plugin Standard:
     # https://zdharma-continuum.github.io/Zsh-100-Commits-Club/Zsh-Plugin-Standard.html
     0=${${ZERO:-${0:#$ZSH_ARGZERO}}:-${(%):-%N}}
@@ -21,19 +21,19 @@ if [[ $0 != make-server || -n $ZSH_SCRIPT ]]; then
     # Such global variable is expected to be typeset'd -g in the plugin.zsh
     # file. Here it's restored in case of the function being run as a script.
     typeset -gA Plugins
-    Plugins[MSERV_DIR]=${0:h}
+    Plugins[CMD_DIR]=${0:h}
 
     # Allow accessing other functions as scripts.
 fi
 
 { zmodload zsh/system && zsystem supports flock
-  Plugins+=( MSERV_FLOCK_AVAIL $((!$?)) ); } &>/dev/null
+  Plugins+=( CMD_FLOCK_AVAIL $((!$?)) ); } &>/dev/null
 
 # Set path in case of other scripts being needed.
 local -aU path; local -U PATH
-path+=( $Plugins[MSERV_DIR]/functions )
+path+=( $Plugins[CMD_DIR]/functions )
 
-MSERV_CONF_DIRS=${MSERV_CONF_DIRS//(#b)((#s)|:)\~/$match[1]$HOME}
+CMD_CONF_DIRS=${CMD_CONF_DIRS//(#b)((#s)|:)\~/$match[1]$HOME}
 
 # Obtains the command to run and full path to log
 # in its directory and outputs to it plus two other
@@ -41,7 +41,7 @@ MSERV_CONF_DIRS=${MSERV_CONF_DIRS//(#b)((#s)|:)\~/$match[1]$HOME}
 run_command()
 {
     # In case running bare script, without plugin manager
-    local ZSRV_THIS_CACHE=${ZSRV_THIS_CACHE:-${ZSH_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}}/makesrv}
+    local ZSRV_THIS_CACHE=${ZSRV_THIS_CACHE:-${ZSH_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}}/commandsrv}
     local cmd=$1 prj=$2:h \
         prjlog=$2 tmplog=/tmp/$2:t cachelog=$ZSRV_THIS_CACHE/$2:t
     shift 2 # Now $@ contains remaining strings – command options.
@@ -50,12 +50,12 @@ run_command()
         command rm -f $tmplog $cachelog $prjlog
         return
     fi
-    # Run via eval to allow e.g.: cmd="env PATH=… make"
-    # or cmd="make -C …"
+    # Run via eval to allow e.g.: cmd="env PATH=… command"
+    # or cmd="command -C …"
     builtin eval "command $cmd $@ &>!$tmplog &>!$cachelog &>!$prjlog&"
     # Save the PID of the background command
     REPLY=$!
-    Plugins[MSERV_${(U)cmd}_PID]=$REPLY
+    Plugins[CMD_${(U)cmd}_PID]=$REPLY
 }
 
 local -a match mbegin mend
@@ -64,7 +64,7 @@ local MATCH; integer MBEGIN MEND
 [[ -n $1 ]] && { source "$1" || return 1;}
 
 # -T ties a comma separated scalar with an array.
-local -TUx MSERV_CONF_DIRS in_src_dirs
+local -TUx CMD_CONF_DIRS in_src_dirs
 local -TUx SRC_DIRS src_dirs
 local REPLY prj tpe prev_tpe datfle
 integer i count lockfd
@@ -81,7 +81,7 @@ local -A Hash=( null .mksrv-last-null
 #
 
 # Initial check for empty input.
-if [[ -z ${MSERV_CONF_DIRS##[[:space:]]##} ]]; then
+if [[ -z ${CMD_CONF_DIRS##[[:space:]]##} ]]; then
     msg {208}Error{39}:{70} No directories of projects given, \
         nothing to manage, exiting…
 fi
@@ -101,24 +101,24 @@ done
 # Final check.
 if ((!$#src_dirs)); then
     msg {208}Error{39}:{70} No suitable directories found, \
-            exiting the {cmd}make-server{70}…
+            exiting the {cmd}command-server{70}…
 fi
 
 # Save the processed value and other Plugins hash fields.
-Plugins[MSERV_CONF_DIRS]=$SRC_DIRS
-Plugins[MSERV_LOCK_FILE]=.mksrv-upmost
-Plugins[MSERV_CONF_INTERVAL]=${MSERV_CONF_INTERVAL:=5}
-# Split the make args by tying it with array `args`
-local -T MSERV_CONF_ARGS args
-Plugins[MSERV_CONF_ARGS]=$MSERV_CONF_ARGS
-Plugins[MSERV_CONF_PAUSE_AFTER]=${MSERV_CONF_PAUSE_AFTER:=30}
+Plugins[CMD_CONF_DIRS]=$SRC_DIRS
+Plugins[CMD_LOCK_FILE]=.mksrv-upmost
+Plugins[CMD_CONF_INTERVAL]=${CMD_CONF_INTERVAL:=5}
+# Split the command args by tying it with array `args`
+local -T CMD_CONF_ARGS args
+Plugins[CMD_CONF_ARGS]=$CMD_CONF_ARGS
+Plugins[CMD_CONF_PAUSE_AFTER]=${CMD_CONF_PAUSE_AFTER:=30}
 
 #
-# Establish make binary to use.
+# Establish command binary to use.
 #
 
-local make=make
-(($+commands[gmake]))&&make=gmake
+local command=command
+(($+commands[gcommand]))&&command=gcommand
 
 #
 # Main loop
@@ -129,7 +129,7 @@ for prj in $src_dirs; do
     command rm -f $prj/.mksrv-sleep
 done
 while ((1)); do
-    sleep $Plugins[MSERV_CONF_INTERVAL]
+    sleep $Plugins[CMD_CONF_INTERVAL]
     i=0
 
     #
@@ -138,14 +138,14 @@ while ((1)); do
     #
     for prj in $src_dirs; do
         i+=1
-        if [[ ! -f $prj/.mksrv-sleep && $NCnt[$prj] -ge Plugins[MSERV_CONF_PAUSE_AFTER] ]]; then
+        if [[ ! -f $prj/.mksrv-sleep && $NCnt[$prj] -ge Plugins[CMD_CONF_PAUSE_AFTER] ]]; then
             msg %B{55}Resuming operation "({208}requested{55})" for {69}$prj
             NCnt[$prj]=0
         fi
         [[ -f $prj/.mksrv-sleep ]] && continue
 
         #
-        # (Re-)Generate the make's temp output file name if needed.
+        # (Re-)Generate the command's temp output file name if needed.
         #
 
         if [[ -z $Data[$prj] ]]; then
@@ -156,14 +156,14 @@ while ((1)); do
         fi
         datfle=$Data[$prj]:t
 
-        # Check if any explicit (-f) make is running.
+        # Check if any explicit (-f) command is running.
         while ((1)); do
                 lockfd=1337
-                if ! zsystem flock -f lockfd -t 0 $prj/$Plugins[MSERV_LOCK_FILE]&>/dev/null
+                if ! zsystem flock -f lockfd -t 0 $prj/$Plugins[CMD_LOCK_FILE]&>/dev/null
                 then
                     if (($?==2)) || [[ -f $prj/.mksrv-lock ]]; then
                         msg {208}Warning:%f waiting for manual, non-managed \
-                            {39}make%f to finish…
+                            {39}command%f to finish…
                         sleep 1
                         continue
                     fi
@@ -172,12 +172,12 @@ while ((1)); do
         done
 
         #
-        # Run make catching its output.
+        # Run command catching its output.
         #
 
         # Three locations: /tmp, ~/.cache/…, and project dir
         # via a refactored function that outputs to them.
-        repeat 1 { run_command "$make -C $prj" $prj/$datfle ${=args[i]} }
+        repeat 1 { run_command "$command -C $prj" $prj/$datfle ${=args[i]} }
         print ongoing $datfle $REPLY >! $prj/.mksrv-state
         wait $REPLY
         print finished $datfle >! $prj/.mksrv-state
@@ -232,7 +232,7 @@ while ((1)); do
 
         # Update sleep count per project.
         [[ $prev_tpe == $tpe || ! ($tpe != $prev_tpe && $tpe != null) ]] && ((NCnt[$prj]+=1))
-        if (( NCnt[$prj] >= $Plugins[MSERV_CONF_PAUSE_AFTER] )); then
+        if (( NCnt[$prj] >= $Plugins[CMD_CONF_PAUSE_AFTER] )); then
             msg %B{55}No change {208}$NCnt[$prj]{55} runs for project \
                 {69}$prj{55} occured, suspending it…
             print $$ >! $prj/.mksrv-sleep

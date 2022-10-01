@@ -1,4 +1,4 @@
-# make-server
+# command-server
 
 Make server that runs in background for configured projects and periodically
 builds them (i.e.: executes `make`) catching their outputs and exposing them
