@@ -1,7 +1,7 @@
 #!/usr/bin/env zsh
 
 csrv-replace-vars() {
-    local var_name=$1 sec_name=vars k v var
+    local var_name=$1 sec_name=vars k v var q
     local -A vars
     local -a tmp
 
@@ -10,6 +10,10 @@ csrv-replace-vars() {
     for k v in ${(@kv)vars}; do
         var=${k##vars__}
         tmp=( "${(@)${(@kv)${(@PAkv)var_name}}//\%$var/$v}" )
+        # Replace any "~dirs", including home ("~").
+        tmp=( "${(@)tmp//(#m)(#s)\~[a-zA-Z0-9_]#/"$(eval print "$MATCH")"}" )
+        # Replace any variables.
+        tmp=( "${(@)tmp//(#m)\$(\{|)[a-zA-Z0-9:,._\{\}\(\)\[\]-]##(\}|)/"$(eval q=\"$MATCH\"; print -rn -- $q)"}" )
         : ${(@AP)var_name::="$tmp[@]"}
     done
 }
