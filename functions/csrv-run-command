@@ -41,7 +41,8 @@ csrv-run-command()
 
     # Run via eval to allow e.g.: cmd="env PATH=… command"
     # or cmd="command -C …"
-    builtin eval $text
+    builtin eval "$text[@]" &
+
     # Save the PID of the background command
     REPLY=$!
     Plugins[CMD_${(U)cmd}_PID]=$REPLY
