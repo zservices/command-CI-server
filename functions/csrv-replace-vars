@@ -9,7 +9,7 @@ csrv-replace-vars() {
 
     for k v in ${(@kv)vars}; do
         var=${k##vars__}
-        tmp=( ${${(@kv)${(@PAkv)var_name}}//\%$var/$v} )
+        tmp=( "${(@)${(@kv)${(@PAkv)var_name}}//\%$var/$v}" )
         : ${(@AP)var_name::="$tmp[@]"}
     done
 }

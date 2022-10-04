@@ -42,10 +42,15 @@ csrv-run-command()
     # Run via eval to allow e.g.: cmd="env PATH=… command"
     # or cmd="command -C …"
     (
-        local pth=$Cfg[main__run-path]
-        if [[ -n $pth ]]; then
-            command mkdir -p $pth
-            builtin cd -q $pth
+        local rundir=$Cfg[main__run-path] pth=$Cfg[main__path] \
+            fpth=$Cfg[main__fpath]
+        path+=( "${(s.:.)${(@Q)${(@z)pth}}}" )
+        fpath+=( "${(s.:.)${(@Q)${(@z)fpth}}}" )
+        typeset -gUx FPATH PATH
+
+        if [[ -n $rundir ]]; then
+            command mkdir -p $rundir
+            builtin cd -q $rundir
         fi
         builtin eval "$text[@]"
     ) &
