@@ -18,7 +18,7 @@ csrv-run-command()
     command mkdir -p $CACHE
 
     # Get the run entity.
-    local cmd=${Cfg[main__runnable]} tpe=${Cfg[main__type]}
+    local cmd=$Cfg[main__runnable] tpe=$Cfg[main__type]
 
     # Get the arguments.
     csrv-get-args $var_name
@@ -41,8 +41,14 @@ csrv-run-command()
 
     # Run via eval to allow e.g.: cmd="env PATH=… command"
     # or cmd="command -C …"
-    builtin eval "$text[@]" &
-
+    (
+        local pth=$Cfg[main__run-path]
+        if [[ -n $pth ]]; then
+            command mkdir -p $pth
+            builtin cd -q $pth
+        fi
+        builtin eval "$text[@]"
+    ) &
     # Save the PID of the background command
     REPLY=$!
     Plugins[CMD_${(U)cmd}_PID]=$REPLY
