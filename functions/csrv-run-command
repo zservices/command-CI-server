@@ -18,27 +18,32 @@ csrv-run-command()
     command mkdir -p $CACHE
 
     # Get the run entity.
-    local cmd=${Cfg[main__runnable]}
+    local cmd=${Cfg[main__runnable]} tpe=${Cfg[main__type]}
+
     # Get the arguments.
     csrv-get-args $var_name
     args=( "$reply[@]" )
 
     local stdin=${Cfg[io__in]:-stdin} stdout=${Cfg[io__out]:-stdout} \
             stderr=${Cfg[io__err]:-stderr}
-    print →→ $stdout / $stderr
-    local text="$cmd \"\${args[@]}\" &>>!\"\$CACHE/$cmd_name.out\" &>>!\"\$data_file\""
-    csrv-extend-iocmd-text $text 0 $stdin
-    csrv-extend-iocmd-text $REPLY 1 $stdout
-    csrv-extend-iocmd-text $REPLY 2 $stderr
+    local -a text=( "\"\${args[@]}\"" "&>>!\"\$CACHE/$cmd_name.out\""
+                  "&>>!\"\$data_file\"" )
+    reply=( "$text[@]" )
 
-    text=$REPLY
+    # Append any redirections.
+    csrv-extend-iocmd-text 0 $stdin "$reply[@]"
+    csrv-extend-iocmd-text 1 $stdout "$reply[@]"
+    csrv-extend-iocmd-text 2 $stderr "$reply[@]"
+    # Prepend any command wrappers like sh -c ….
+    csrv-extend-typecmd-text INI $cmd "$reply[@]"
+
+    text=( "$reply[@]" )
 
     # Run via eval to allow e.g.: cmd="env PATH=… command"
     # or cmd="command -C …"
     builtin eval $text
     # Save the PID of the background command
     REPLY=$!
-    print running $text…
     Plugins[CMD_${(U)cmd}_PID]=$REPLY
 }
 

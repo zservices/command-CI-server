@@ -34,7 +34,8 @@ fpath+=( $Plugins[CMD_DIR]/functions )
 
 autoload -Uz @str-read-toml @str-parse-json @str-dump \
             csrv-filter-dirs csrv-run-command csrv-get-args \
-            csrv-replace-vars csrv-extend-iocmd-text
+            csrv-replace-vars csrv-extend-iocmd-text \
+            csrv-extend-typecmd-text
 
 # Tilde expand for all directories.
 CMD_CONF_DIRS=${CMD_CONF_DIRS//(#b)((#s)|:)\~/$match[1]$HOME}
@@ -95,7 +96,7 @@ while ((1)); do
             @str-read-toml $cmd INI
 
             csrv-replace-vars INI
-            @str-dump INI
+            #@str-dump INI
 
             #
             # Run cmd catching its output.
@@ -117,7 +118,7 @@ while ((1)); do
             #
 
             msg {208}COMMAND-SERVER:%f Command $cmd of {39}$prj:%f \
-                run with exit code $code.
+                run with exit code $exit_code.
         done
     done
 done
