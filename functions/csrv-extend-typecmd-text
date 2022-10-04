@@ -24,24 +24,26 @@ csrv-extend-typecmd-text() {
             reply=( "source ${(q)cmd}" )
         fi
     elif [[ $tpe == binary ]]; then
-        # Unsupported
         if [[ $sh != (none|) ]]; then
-            reply=( "() { $cmd \"\$@\"; }" )
+            reply=( $sh -c '"'"$cmd"' \"\$@\""' csrv-bin )
         else
-            reply=( "() { $cmd \"\$@\"; }" )
+            reply=( "$cmd \"\$@\"" )
         fi
     elif [[ $tpe == autoload ]]; then
         if [[ $sh != (none|) ]]; then
-            reply=( $sh -c "\"autoload $cmd; $cmd \\\$@\"" csrv-auto )
+            reply=( $sh -c "\"autoload $cmd; $cmd \\\"\\\$@\\\"\"" csrv-auto )
         else
             autoload $cmd
             reply=( $cmd )
         fi
     elif [[ $tpe == eval ]]; then
-        reply=( eval $cmd )
+        if [[ $sh != (none|) ]]; then
+            reply=( $sh -c '"'"eval $cmd"' \"\$@\""' csrv-eval )
+        else
+            reply=( eval $cmd )
+        fi
     fi
     reply+=( "$args[@]" )
-    print -rl -- $reply >> /tmp/reply3
 }
 
 # vim:ft=zsh:sw=4:sts=4:ts=8:et
