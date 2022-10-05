@@ -86,14 +86,14 @@
         } || {
             __idx+=${mbegin[1]}
             [[ -z $__quoting ]] && {
-                if [[ ${match[1]} = ["({["] ]]; then
+                if [[ ${match[1]} = ["{["] ]]; then
                     __Strings[$__level/${__Counts[$__level]}]+=" $'\0'--object--$'\0'"
                     __pos_to_level[$__idx]=$(( ++ __level ))
                     __level_to_pos[$__level]=$__idx
                     (( __Counts[$__level] += 1 ))
                     __sidx=__idx+1
                     __had_quoted_value=0
-                elif [[ ${match[1]} = ["]})"] ]]; then
+                elif [[ ${match[1]} = ["]}"] ]]; then
                     (( !__had_quoted_value )) && \
                         __Strings[$__level/${__Counts[$__level]}]+=" ${(q)__input[__sidx,__idx-1]//((#s)[[:blank:]]##|([[:blank:]]##(#e)))}"
                     __had_quoted_value=1

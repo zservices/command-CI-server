@@ -10,6 +10,8 @@ csrv-replace-vars() {
     for k v in ${(@kv)vars}; do
         var=${k##vars__}
         tmp=( "${(@)${(@kv)${(@PAkv)var_name}}//\%$var/$v}" )
+        # Replace command subst.
+        tmp=( "${(@)tmp//(#m)\$\([^\)]##\)/"$(eval q=\"$MATCH\"; print -rn -- $q | tee -a /tmp/reply)"}" )
         # Replace any "~dirs", including home ("~").
         tmp=( "${(@)tmp//(#m)(#s)\~[a-zA-Z0-9_]#/"$(eval print "$MATCH")"}" )
         # Replace any variables.
