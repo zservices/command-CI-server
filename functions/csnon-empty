@@ -1,0 +1,7 @@
+#!/usr/bin/env zsh
+
+builtin emulate -L zsh -o extendedglob
+
+[[ $1 != [[:space:]]# ]]
+
+# vim:ft=zsh:sw=4:sts=4:ts=8:et

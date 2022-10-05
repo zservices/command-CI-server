@@ -1,23 +1,21 @@
 #!/usr/bin/env zsh
 
-csrv-replace-vars() {
-    local var_name=$1 sec_name=vars k v var q
-    local -A vars
-    local -a tmp
+local var_name=$1 sec_name=vars k v var q
+local -A vars
+local -a tmp
 
-    vars=( "${(@kv)${(@PAkv)var_name}[(I)vars__*]}" )
+vars=( "${(@kv)${(@PAkv)var_name}[(I)vars__*]}" )
 
-    for k v in ${(@kv)vars}; do
-        var=${k##vars__}
-        tmp=( "${(@)${(@kv)${(@PAkv)var_name}}//\%$var/$v}" )
-        # Replace command subst.
-        tmp=( "${(@)tmp//(#m)\$\([^\)]##\)/"$(eval q=\"$MATCH\"; print -rn -- $q | tee -a /tmp/reply)"}" )
-        # Replace any "~dirs", including home ("~").
-        tmp=( "${(@)tmp//(#m)(#s)\~[a-zA-Z0-9_]#/"$(eval print "$MATCH")"}" )
-        # Replace any variables.
-        tmp=( "${(@)tmp//(#m)\$(\{|)[a-zA-Z0-9:,._\{\}\(\)\[\]-]##(\}|)/"$(eval q=\"$MATCH\"; print -rn -- $q)"}" )
-        : ${(@AP)var_name::="$tmp[@]"}
-    done
-}
+for k v in ${(@kv)vars}; do
+    var=${k##vars__}
+    tmp=( "${(@)${(@kv)${(@PAkv)var_name}}//\%$var/$v}" )
+    # Replace command subst.
+    tmp=( "${(@)tmp//(#m)\$\([^\)]##\)/"$(eval q=\"$MATCH\"; print -rn -- $q)"}" )
+    # Replace any "~dirs", including home ("~").
+    tmp=( "${(@)tmp//(#m)(#s)\~[a-zA-Z0-9_]#/"$(eval print "$MATCH")"}" )
+    # Replace any variables.
+    tmp=( "${(@)tmp//(#m)\$(\{|)[a-zA-Z0-9:,._\{\}\(\)\[\]-]##(\}|)/"$(eval q=\"$MATCH\"; print -rn -- $q)"}" )
+    : ${(@AP)var_name::="$tmp[@]"}
+done
 
 # vim:ft=zsh:sw=4:sts=4:ts=8:et

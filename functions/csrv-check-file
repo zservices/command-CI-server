@@ -1,0 +1,65 @@
+#!/usr/bin/env zsh
+
+local cmd=$1 tpe=$2
+
+# No def file given?
+[[ -z $cmd ]] && {
+    if [[ $tpe == command ]]; then
+        msg {208}Error: {41}Please give a command to run either by:\\n \
+                    {33}-%f a path to its definition file,\\n \
+                    {33}-%f a name \(requires correct CMD_CONF_DIRS \
+                            variable set with its directory\).
+    else
+        msg {208}Error, file $tpe is required, please specify some.
+    fi
+    return 1
+}
+
+csrv-command-is-readable() {
+    [[ $1 == -q ]] && { integer q=1; shift; }
+    local cmd=$1
+
+    # File doesn't exist?
+    [[ ! -f $cmd && ! -f $cmd.ini && ! -f $cmd.cmd ]] && {
+        ((q)) || msg %B{208}Error: {41}file {33}$cmd{41} not found, need \
+            to specify a $tpe, exiting.
+        return 3
+    }
+
+    # File isn't readable?
+    [[ ! -r $cmd && ! -r $cmd.ini && ! -r $cmd.cmd ]] && {
+        ((q)) || msg %B{208}Error: {41}file {33}$cmd{41} is unreadable, need \
+            to specify a $tpe, exiting.
+        return 5
+    }
+
+    # Quick search for the extension.
+    local -a arr
+    arr=( $cmd.(cmd|ini)(N.) $cmd(N.) )
+    REPLY=$arr[1]
+
+    # Return 7 if not found.
+    return $(( !$#arr*7 ))
+}
+
+# Initial check for original cmd argument.
+# It sets REPLY to a found command file.
+csrv-command-is-readable -q $cmd && return 0
+
+# Not found, so search in CMD_CONF_DIRS.
+typeset -TxU CMD_CONF_DIRS dirs
+[[ -z $dirs ]] && {
+    msg {203}Error:{41} No dirs with command files set \(CMD_CONF_DIRS empty\), \
+            command definition{69} $cmd{41} file not found, exiting…
+    return 8
+}
+
+integer p
+local q
+for q in $dirs; do
+    csrv-command-is-readable -q $q/$cmd && break
+done
+
+[[ -n $REPLY ]]
+
+return $?

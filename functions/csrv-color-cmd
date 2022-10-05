@@ -1,0 +1,43 @@
+#!/usr/bin/env zsh
+# -*- mode: sh; sh-indentation: 4; indent-tabs-mode: nil; sh-basic-offset: 4; -*-
+
+local -a args=( "$@" )
+
+args=(
+   "${args[@]//(#b)((?|(#s))((.|\/|\~)[[:alnum:]+=\\@%\^,.\/-]##))~\
+([\!\>]|[[:alnum:]]\/)*/\
+$match[2]$(q=$match[3];[[ $q == *\/* && ! -r $q ]] && \
+print -rn -- %B\{203\}$q%b%f || \
+print -rn -- $q)}"
+)
+
+args=(
+   "${args[@]//(#b)(\>\>(\!|))([^[:space:]]#)/$match[1]\{80\}$match[3]%f%b}"
+)
+args=(
+   "${args[@]//(#b)([0-9]##)(\>\>(\!|))/%B\{208\}$match[1]%f%b$match[2]}"
+)
+
+# Files.
+args=(
+   "${args[@]//(#b)((?|(#s))((.|\/|\~)[[:alnum:]+=\\@%\^,.\/-]##))~\
+([\!\>]|[[:alnum:]]\/)*/\
+$match[2]$(q=$match[3];[[ $q == *\/* && -r $q && -f $q ]] && \
+print -rn -- %B\{39\}$q%b%f || \
+print -rn -- $q)}"
+)
+
+# Dirs.
+args=(
+   "${args[@]//(#b)((?|(#s))((.|\/|\~)[[:alnum:]+=\\@%\^,.\/-]##))~\
+([\!\>]|[[:alnum:]]\/)*/\
+$match[2]$(q=$match[3];[[ $q == *\/* && -r $q && -d $q ]] && \
+print -rn -- \{41\}$q%b%f || \
+print -rn -- $q)}"
+)
+
+args=( "${args[@]//(#m)\>\>(\!|)/%B\{69\}$MATCH%f%b}" )
+
+reply=( "${args[@]}" )
+
+# vim:ft=zsh:sw=4:sts=4:ts=8:et

@@ -1,0 +1,99 @@
+#!/usr/bin/env zsh
+# Obtains the command to run and full path to log
+# in its directory and outputs to it plus two other
+# locations (/tmp and ~/.config/csrv)
+
+local -A Cfg
+# In case running bare script, without plugin manager
+local CACHE var_name=$1 cmd_name=$2 data_file=$3
+local -a args
+shift 3
+Cfg=( "${(@PAkv)var_name}" )
+CACHE=${ZSRV_THIS_CACHE:-${ZSH_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}}}
+CACHE+=/commandsrv
+
+# Create cacbe dir.
+command mkdir -p $CACHE
+
+# Get the run entity.
+local cmd=$Cfg[main__runnable] tpe=$Cfg[main__type]
+
+# Get the arguments.
+csrv-get-args $var_name
+args=( "$reply[@]" )
+
+local stdin=${Cfg[io__in]:-stdin} stdout=${Cfg[io__out]:-stdout} \
+        stderr=${Cfg[io__err]:-stderr}
+local -a text=( "\"\${args[@]}\"" "&>>!\"\$CACHE/$cmd_name.out\""
+              "&>>!\"\$data_file\"" )
+reply=( "$text[@]" )
+
+# Append any redirections.
+csrv-extend-iocmd-text 0 $stdin "$reply[@]"
+csrv-extend-iocmd-text 1 $stdout "$reply[@]"
+csrv-extend-iocmd-text 2 $stderr "$reply[@]"
+# Prepend any command wrappers like sh -c ….
+csrv-extend-typecmd-text INI $cmd "$reply[@]"
+
+text=( "$reply[@]" )
+
+
+# Run via eval to allow e.g.: cmd="env PATH=… command"
+# or cmd="command -C …"
+(
+    local rundir=$Cfg[main__run-path] pth=$Cfg[main__path] \
+        fpth=$Cfg[main__fpath] shell=$Cfg[main__shell] q
+    integer qlen
+
+    typeset -gUx FPATH PATH
+    # Prepend the paths.
+    [[ $pth != [[:space:]]# ]] && path=( "${(s.:.)${(@Q)${(@z)pth}}}" $path )
+    [[ $fpth != [[:space:]]# ]] && fpath=( "${(s.:.)${(@Q)${(@z)fpth}}}" $fpath )
+
+    builtin zstat +mtime -A mtime ${Cfg[x_ini_path]%.(ini|cmd)}.state
+    local tcount=$(((EPOCHSECONDS-mtime)/60))
+    if (( minutes )); then
+        tcount+="%f minutes"
+    else
+        tcount=$(( EPOCHSECONDS-mtime ))"%f seconds"
+    fi
+
+    # CD into run dir.
+    if [[ -n $rundir ]]; then
+        command mkdir -p $rundir
+        builtin cd -q $rundir
+    fi
+
+    text=( "${text[@]:#&>>\!\"\$CACHE/other.out\"}" )
+    text=( "${text[@]:#\&>>\!\"\$data_file\"}" )
+    text=( "${text[@]/\"\$\{args\[@\]\}\"/$args[*]}" )
+    csrv-color-cmd "$text[@]"
+
+    # Print preamble on the center.
+    q="$(msg %B{203}«««{39} Status for command: {41}$Cfg[x_ini_path]:t {203}»»»)"
+    qlen=${#${(S)q//$'\e'\[?#m/}}
+    msg ${(l:(COLUMNS-qlen)/2:: :):-}$q\\n
+
+    # Second and following lines.
+    msg %B{203}• {41}Derived command %f%b\(%B{203}bold red%f%b – missing paths, \
+        %B{39}bold blue%f%b – present ones, {41}green%f – dirs\):\
+        \\n\\n%B{203}\#%b{39} "$reply[@]"\\n
+    msg %B{203}» {82}Runnable type: {39}$Cfg[main__type]
+    csnon-empty $pth && msg {203}» {41}\$PATH += %f$pth
+    csnon-empty $fpth && msg {203}» {41}\$FPATH += %f$fpth
+    csnon-empty $rundir && msg {203}» {41}Run dir: %f$rundir
+    msg {203}» {41}Run shell: %f${${shell:#none}:-Not set}
+    msg {203}» {41}Standard input: %f$Cfg[io__in]
+    msg {203}» {41}Standard output: %f$Cfg[io__out]
+    msg {203}» {41}Standard error: %f$Cfg[io__err]
+
+    msg %B{203}• {41}Last run: %b{70}${tcount} ago.
+) &
+
+# Save the PID of the background command
+local tmp=$!-$? key=CMD_${(U)cmd}_PID
+Plugins[$key]=${tmp%-*}
+REPLY=${tmp%-*}
+return ${tmp#*-}
+
+# vim:ft=zsh:sw=4:sts=4:ts=8:et

@@ -2,61 +2,61 @@
 # Obtains the command to run and full path to log
 # in its directory and outputs to it plus two other
 # locations (/tmp and ~/.config/csrv)
-csrv-run-command()
-{
-    local -A Cfg
-    # In case running bare script, without plugin manager
-    local CACHE var_name=$1 cmd_name=$2 data_file=$3
-    local -a args
-    shift 3
+local -A Cfg
 
-    Cfg=( "${(@PAkv)var_name}" )
-    CACHE=${ZSRV_THIS_CACHE:-${ZSH_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}}}
-    CACHE+=/commandsrv
+local CACHE var_name=$1 cmd_name=$2 data_file=$3
+local -a args
+shift 3
 
-    # Create cacbe dir.
-    command mkdir -p $CACHE
+Cfg=( "${(@PAkv)var_name}" )
+CACHE=${ZSRV_THIS_CACHE:-${ZSH_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}}}
+CACHE+=/commandsrv
 
-    # Get the run entity.
-    local cmd=$Cfg[main__runnable] tpe=$Cfg[main__type]
+# Create cacbe dir.
+command mkdir -p $CACHE
 
-    # Get the arguments.
-    csrv-get-args $var_name
-    args=( "$reply[@]" )
+# Get the run entity.
+local cmd=$Cfg[main__runnable] tpe=$Cfg[main__type]
 
-    local stdin=${Cfg[io__in]:-stdin} stdout=${Cfg[io__out]:-stdout} \
-            stderr=${Cfg[io__err]:-stderr}
-    local -a text=( "\"\${args[@]}\"" "&>>!\"\$CACHE/$cmd_name.out\""
-                  "&>>!\"\$data_file\"" )
-    reply=( "$text[@]" )
+# Get the arguments.
+csrv-get-args $var_name
+args=( "$reply[@]" )
 
-    # Append any redirections.
-    csrv-extend-iocmd-text 0 $stdin "$reply[@]"
-    csrv-extend-iocmd-text 1 $stdout "$reply[@]"
-    csrv-extend-iocmd-text 2 $stderr "$reply[@]"
-    # Prepend any command wrappers like sh -c ….
-    csrv-extend-typecmd-text INI $cmd "$reply[@]"
+local stdin=${Cfg[io__in]:-stdin} stdout=${Cfg[io__out]:-stdout} \
+        stderr=${Cfg[io__err]:-stderr}
+local -a text=( "\"\${args[@]}\"" "&>>!\"\$CACHE/$cmd_name.out\""
+              "&>>!\"\$data_file\"" )
+reply=( "$text[@]" )
 
-    text=( "$reply[@]" )
+# Append any redirections.
+csrv-extend-iocmd-text 0 $stdin "$reply[@]"
+csrv-extend-iocmd-text 1 $stdout "$reply[@]"
+csrv-extend-iocmd-text 2 $stderr "$reply[@]"
+# Prepend any command wrappers like sh -c ….
+csrv-extend-typecmd-text INI $cmd "$reply[@]"
 
-    # Run via eval to allow e.g.: cmd="env PATH=… command"
-    # or cmd="command -C …"
-    (
-        local rundir=$Cfg[main__run-path] pth=$Cfg[main__path] \
-            fpth=$Cfg[main__fpath]
-        path+=( "${(s.:.)${(@Q)${(@z)pth}}}" )
-        fpath+=( "${(s.:.)${(@Q)${(@z)fpth}}}" )
-        typeset -gUx FPATH PATH
+text=( "$reply[@]" )
 
-        if [[ -n $rundir ]]; then
-            command mkdir -p $rundir
-            builtin cd -q $rundir
-        fi
-        builtin eval "$text[@]"
-    ) &
-    # Save the PID of the background command
-    REPLY=$!
-    Plugins[CMD_${(U)cmd}_PID]=$REPLY
-}
+# Run via eval to allow e.g.: cmd="env PATH=… command"
+# or cmd="command -C …"
+(
+    local rundir=$Cfg[main__run-path] pth=$Cfg[main__path] \
+        fpth=$Cfg[main__fpath]
+    path+=( "${(s.:.)${(@Q)${(@z)pth}}}" )
+    fpath+=( "${(s.:.)${(@Q)${(@z)fpth}}}" )
+    typeset -gUx FPATH PATH
+
+    if [[ -n $rundir ]]; then
+        command mkdir -p $rundir
+        builtin cd -q $rundir
+    fi
+    repeat 1 { builtin eval "$text[@]"; }
+) &
+# Save the PID of the background command
+local tmp=$!-$? key=CMD_${(U)cmd}_PID
+Plugins[$key]=${tmp%-*}
+REPLY=${tmp%-*}
+return ${tmp#*-}
+
 
 # vim:ft=zsh:sw=4:sts=4:ts=8:et

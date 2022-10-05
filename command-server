@@ -6,62 +6,30 @@
 # An example of type-agnostic script/function, i.e.: the file can be run as a +x
 # script or as an autoload function.
 
-# Set the base and typically useful options
-builtin emulate -L zsh
-builtin setopt extendedglob warncreateglobal typesetsilent noshortloops \
-        rcquotes noautopushd multios
-
-# Run as script? ZSH_SCRIPT is a Zsh 5.3 addition
-if [[ $0 != command-server || -n $ZSH_SCRIPT ]]; then
-    # Handle $0 according to the Zsh Plugin Standard:
-    # https://zdharma-continuum.github.io/Zsh-100-Commits-Club/Zsh-Plugin-Standard.html
-    0=${${ZERO:-${0:#$ZSH_ARGZERO}}:-${(%):-%N}}
-    0=${${(M)0##/*}:-$PWD/$0}
-
-    # Such global variable is expected to be typeset'd -g in the plugin.zsh
-    # file. Here it's restored in case of the function being run as a script.
-    typeset -gA Plugins
-    Plugins[CMD_DIR]=${0:h}
-fi
-
-{ zmodload zsh/system && zsystem supports flock
-  Plugins+=( CMD_FLOCK_AVAIL $((!$?)) ); } &>/dev/null
-
-# Set path in case of other scripts being needed.
-typeset -gaU path fpath; typeset -gU PATH FPATH
-path+=( $Plugins[CMD_DIR]/bin )
-fpath+=( $Plugins[CMD_DIR]/functions )
-
-autoload -Uz @str-read-toml @str-parse-json @str-dump \
-            csrv-filter-dirs csrv-run-command csrv-get-args \
-            csrv-replace-vars csrv-extend-iocmd-text \
-            csrv-extend-typecmd-text
+# Bootstrap complete exec environment…
+0=${${0:#$ZSH_ARGZERO}:-${(%):-%N}}
+0=${${(M)0##/*}:-$PWD/${0#./}}
+# … by loading common.snip.zsh.
+source $0:h/lib/common.snip.zsh cmd-server $0:h
 
 # Tilde expand for all directories.
-CMD_CONF_DIRS=${CMD_CONF_DIRS//(#b)((#s)|:)\~/$match[1]$HOME}
+CMD_CONF_DIRS=${CMD_CONF_DIRS//(#b)((#s)|:)\~([A-Za-z0-9_]#)/\
+$( eval q="~$match[1]"; print -rn -- $q)}
 
-state() {
-    local out=$1:h/$2.state
-    shift 2
-    print -r -- $@ >! $out
-}
-
-local -a match mbegin mend
-local MATCH; integer MBEGIN MEND
-
+# Load configuration file if properly given.
+[[ -f $1 ]] && source $1 || \
+    { [[ -n $1 ]] && msg {208}Error:{41} config $1 not found, ignoring…;}
 
 #
 # Pre-process the repositories filtering out incorrect ones.
 #
 
-[[ -f $1 ]] && source $1
-
 # -T ties a comma separated scalar with an array.
 local -TUx CMD_CONF_DIRS in_src_dirs
 local -TUx SRC_DIRS src_dirs
-local REPLY prj tpe prev_tpe outfile cmd cmd_name
+local prj tpe prev_tpe outfile cmd cmd_name
 integer i count lockfd exit_code
-local -a tmp reply
+local -a tmp
 local -A INI
 
 csrv-filter-dirs $in_src_dirs || exit 1
@@ -91,32 +59,8 @@ while ((1)); do
         i+=1
 
         for cmd in $prj/*.(ini|cmd); do
-            cmd_name=$cmd:t:r
-
-            @str-read-toml $cmd INI
-
-            csrv-replace-vars INI
-            #@str-dump INI
-
-            #
-            # Run cmd catching its output.
-            #
-
-            # The local out file.
-            outfile=$cmd:h/$cmd_name.out
-
-            # The main line of code ↔ execution of the ini-file runnable.
-            repeat 1 { csrv-run-command INI $cmd_name $outfile; }
-
-            state $cmd $cmd_name ongoing PID:$REPLY $outfile
-            wait $REPLY
+            cmd-run $cmd
             exit_code=$?
-            state $cmd $cmd_name finished RET:$exit_code $outfile
-
-            #
-            # Save the state of the result after examination.
-            #
-
             msg {208}COMMAND-SERVER:%f Command $cmd of {39}$prj:%f \
                 run with exit code $exit_code.
         done
