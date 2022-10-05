@@ -1,0 +1,17 @@
+#!/usr/bin/env zsh
+# -*- mode: sh; sh-indentation: 4; indent-tabs-mode: nil; sh-basic-offset: 4; -*-
+
+# Copyright (c) 2022 Sebastian Gniazdowski
+
+# Bootstrap complete exec environment.
+builtin emulate -L zsh
+0=${${0:#$ZSH_ARGZERO}:-${(%):-%N}}
+0=${${(M)0##/*}:-$PWD/${0#./}}
+source $0:h:h/lib/common.snip.zsh cmd $0:h:h
+
+case $1 in
+    (*)
+        (( $+commands[cmd-$1] )) && cmd-$1 ${@[2,-1]}
+        ;;
+esac
+# vim:ft=zsh:tw=80:sw=4:sts=4:et:foldmarker=[[[,]]]

@@ -1,0 +1,36 @@
+#!/usr/bin/env zsh
+# -*- mode: sh; sh-indentation: 4; indent-tabs-mode: nil; sh-basic-offset: 4; -*-
+
+# Copyright (c) 2022 Sebastian Gniazdowski
+
+# Bootstrap complete exec environment.
+builtin emulate -L zsh
+0=${${0:#$ZSH_ARGZERO}:-${(%):-%N}}
+0=${${(M)0##/*}:-$PWD/${0#./}}
+source $0:h:h/lib/common.snip.zsh cmd-run $0:h:h
+
+local cmd=$1 cmd_name=$1:t:r
+integer exit_code=1
+
+csrv-check-file "$cmd" command || return $?
+
+# Read command definition.
+@str-read-toml $cmd INI
+
+# Replace any special sequences like %var or $var.
+csrv-replace-vars INI
+
+#
+# Run cmd catching its output.
+#
+
+# The local out file.
+outfile=$cmd:h/$cmd_name.out
+INI[x_ini_path]=$cmd
+
+# The main line of code.
+repeat 1 { csrv-status-command INI $cmd_name $outfile; exit_code=$?; }
+
+return exit_code
+
+# vim:ft=zsh:tw=80:sw=4:sts=4:et:foldmarker=[[[,]]]
