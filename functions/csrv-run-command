@@ -25,7 +25,7 @@ args=( "$reply[@]" )
 local stdin=${Config[io__in]:-stdin} stdout=${Config[io__out]:-stdout} \
         stderr=${Config[io__err]:-stderr}
 local -a text=( "${args[@]}" "&>>!\"\$CACHE/$cmd_name.out\""
-              "&>>!\"\$data_file\"" )
+              "&>>|\"\$data_file\"" )
 reply=( "$text[@]" )
 
 # Append any redirections.

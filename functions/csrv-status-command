@@ -78,9 +78,9 @@ text=( "$reply[@]" )
         %B{39}bold blue%f%b – present ones, {41}green%f – dirs\):\
         \\n\\n%B{203}\#%b{39} "$reply[@]"\\n
     msg %B{203}» {82}Runnable type: {39}$Config[main__type]
-    csnon-empty $pth && msg {203}» {41}\$PATH += %f$pth
-    csnon-empty $fpth && msg {203}» {41}\$FPATH += %f$fpth
-    csnon-empty $rundir && msg {203}» {41}Run dir: %f$rundir
+    csnon_empty $pth && msg {203}» {41}\$PATH += %f$pth
+    csnon_empty $fpth && msg {203}» {41}\$FPATH += %f$fpth
+    csnon_empty $rundir && msg {203}» {41}Run dir: %f$rundir
     msg {203}» {41}Run shell: %f${${shell:#none}:-Not set}
     msg {203}» {41}Standard input: %f$Config[io__in]
     msg {203}» {41}Standard output: %f$Config[io__out]

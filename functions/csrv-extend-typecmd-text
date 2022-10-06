@@ -25,13 +25,13 @@ csrv-extend-typecmd-text() {
         fi
     elif [[ $tpe == binary ]]; then
         if [[ $sh != (none|) ]]; then
-            reply=( $sh -c '"'"$cmd"' \"\$@\""' csrv-bin )
+            reply=( $sh -c "'$cmd \"\$@\"'" csrv-bin )
         else
             reply=( "$cmd \"\$@\"" )
         fi
     elif [[ $tpe == autoload ]]; then
         if [[ $sh != (none|) ]]; then
-            reply=( $sh -c "\"autoload $cmd; $cmd \\\"\\\$@\\\"\"" csrv-auto )
+            reply=( $sh -c "\"autoload $cmd; $cmd \\\"\\\$@\\\"\"" csrv-autoload )
         else
             autoload $cmd
             reply=( $cmd )
