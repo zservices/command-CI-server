@@ -9,9 +9,29 @@ builtin emulate -L zsh
 0=${${(M)0##/*}:-$PWD/${0#./}}
 source $0:h:h/lib/common.snip.zsh cmd $0:h:h
 
-case $1 in
+local subcmd=$1
+shift
+warn() {
+    print -P %F{208}Error: command $subcmd binary \(%F{39}cmd-$subcmd{208}\) \
+        not found, exiting doing nothing.
+}
+
+case $subcmd in
     (*)
-        (( $+commands[cmd-$1] )) && cmd-$1 ${@[2,-1]}
+        if (( $+commands[cmd-$subcmd] )); then
+            command cmd-$subcmd "$@"
+        elif [[ -d $CMD_DIR ]]; then
+            local libexec=$CMD_DIR/libexec
+            if [[ -x $libexec/cmd-$subcmd ]]; then
+                command $libexec/cmd-$subcmd "$@"
+            else
+                warn
+                return 1
+            fi
+        else
+            warn
+            return 3
+        fi
         ;;
 esac
 # vim:ft=zsh:tw=80:sw=4:sts=4:et:foldmarker=[[[,]]]
