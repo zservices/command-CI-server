@@ -13,6 +13,7 @@ local cmd=$1 cmd_name=$1:t:r
 integer exit_code=1
 
 csrv-check-file "$cmd" command || return $?
+cmd=$REPLY
 
 # Read command definition.
 @str-read-toml $cmd INI

@@ -17,7 +17,11 @@ csrv-check-file "$cmd" command || return $?
 cmd=$REPLY
 
 # Read command definition.
-@str-read-toml $cmd INI
+@str-read-toml $cmd INI || {
+    msg {203}Warning:{174} problems reading command definition \
+        \(file: {41}$cmd{174}
+    return 1
+}
 
 # Replace any special sequences like %var or $var.
 csrv-replace-vars INI

@@ -32,6 +32,7 @@
     local __toml_file="$1" __out_hash="${2:-TOML}" __key_prefix="$3"
     local IFS='' __line __cur_section="void" __access_string REPLY
     local -a match mbegin mend
+    integer retval
 
     # Don't leak any helper functions
     typeset -g tomlef
@@ -51,7 +52,8 @@
         fi
     }
 
-    [[ ! -r "$__toml_file" ]] && { builtin print -r "@str-read-toml: an toml file is unreadable ($__toml_file)"; return 1; }
+    [[ ! -r "$__toml_file" ]] && { builtin msg: {203}@str-read-toml: \
+        {174}a toml file is unreadable \($__toml_file\); return 1; }
     (( ${(P)+__out_hash} )) || typeset -gA "$__out_hash"
 
     while read -r -t 1 __line; do
@@ -61,13 +63,19 @@
             __cur_section="${match[1]}"
         elif [[ "$__line" = (#b)[[:blank:]]#([^[:blank:]=]##)[[:blank:]]#[=][[:blank:]]#(*) ]]; then
             match[2]="${match[2]%"${match[2]##*[! $'\t']}"}" # remove trailing whitespace
-            .str-toml-parse-array "${match[2]}" && match[2]="$REPLY"
+            .str-toml-parse-array "${match[2]}" && \
+                match[2]="$REPLY"
             __access_string="${__out_hash}[${__key_prefix}${__cur_section}__${match[1]}]"
             : "${(P)__access_string::=${match[2]}}"
+        else
+            if [[ -n $__line ]]; then
+                msg {203}Error:{174} Incorrect line in input: %f$__line
+                retval+=1
+            fi
         fi
     done < "$__toml_file"
 
-    return 0
+    return retval
 }
 
 
