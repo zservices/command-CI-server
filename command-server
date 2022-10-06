@@ -13,7 +13,7 @@
 source $0:h/lib/common.snip.zsh cmd-server $0:h
 
 # Tilde expand for all directories.
-CMD_CONF_DIRS=${CMD_CONF_DIRS//(#b)((#s)|:)\~([A-Za-z0-9_]#)/\
+CMD_COMMAND_PATH=${CMD_COMMAND_PATH//(#b)((#s)|:)\~([A-Za-z0-9_]#)/\
 $( eval q="~$match[1]"; print -rn -- $q)}
 
 # Load configuration file if properly given.
@@ -25,8 +25,8 @@ $( eval q="~$match[1]"; print -rn -- $q)}
 #
 
 # -T ties a comma separated scalar with an array.
-local -TUx CMD_CONF_DIRS in_src_dirs
-local -TUx SRC_DIRS src_dirs
+local -TUx CMD_COMMAND_PATH in_src_dirs
+local -TUx COMMAND_PATH src_dirs
 local prj tpe prev_tpe outfile cmd cmd_name
 integer i count lockfd exit_code
 local -a tmp
@@ -36,7 +36,7 @@ csrv-filter-dirs $in_src_dirs || exit 1
 src_dirs=( $reply )
 
 # Save the processed value and other Plugins hash fields.
-Plugins[CMD_CONF_DIRS]=$SRC_DIRS
+Plugins[CMD_COMMAND_PATH]=$COMMAND_PATH
 Plugins[CMD_CONF_INTERVAL]=${CMD_CONF_INTERVAL:=5}
 
 #

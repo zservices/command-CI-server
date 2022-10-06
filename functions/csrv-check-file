@@ -7,7 +7,7 @@ local cmd=$1 tpe=$2
     if [[ $tpe == command ]]; then
         msg {208}Error: {41}Please give a command to run either by:\\n \
                     {33}-%f a path to its definition file,\\n \
-                    {33}-%f a name \(requires correct CMD_CONF_DIRS \
+                    {33}-%f a name \(requires correct CMD_COMMAND_PATH \
                             variable set with its directory\).
     else
         msg {208}Error, file $tpe is required, please specify some.
@@ -46,10 +46,10 @@ csrv-command-is-readable() {
 # It sets REPLY to a found command file.
 csrv-command-is-readable -q $cmd && return 0
 
-# Not found, so search in CMD_CONF_DIRS.
-typeset -TxU CMD_CONF_DIRS dirs
+# Not found, so search in CMD_COMMAND_PATH.
+typeset -TxU CMD_COMMAND_PATH dirs
 [[ -z $dirs ]] && {
-    msg {203}Error:{41} No dirs with command files set \(CMD_CONF_DIRS empty\), \
+    msg {203}Error:{41} No dirs with command files set \(CMD_COMMAND_PATH empty\), \
             command definition{69} $cmd{41} file not found, exiting…
     return 8
 }
