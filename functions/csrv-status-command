@@ -47,14 +47,26 @@ text=( "$reply[@]" )
 
     typeset -gUx FPATH PATH
     # Prepend the paths.
-    csnon_empty $pth && path=( "${(s.:.)${(@Q)${(@z)pth}}}" $path )
-    csnon_empty $fpth && fpath=( "${(s.:.)${(@Q)${(@z)fpth}}}" $fpath )
+    [[ $pth != [[:space:]]# ]] && path=( "${(s.:.)${(@Q)${(@z)pth}}}" $path )
+    [[ $fpth != [[:space:]]# ]] && fpath=( "${(s.:.)${(@Q)${(@z)fpth}}}" $fpath )
+
+    builtin zstat +mtime -A mtime ${Config[x_ini_path]%.(ini|cmd)}.state
+    local tcount=$(((EPOCHSECONDS-mtime)/60))
+    if (( minutes )); then
+        tcount+="%f minutes"
+    else
+        tcount=$(( EPOCHSECONDS-mtime ))"%f seconds"
+    fi
 
     # CD into run dir.
     if [[ -n $rundir ]]; then
         command mkdir -p $rundir
         builtin cd -q $rundir
     fi
+
+    text=( "${text[@]:#&>>\!\"\$CACHE/other.out\"}" )
+    text=( "${text[@]:#\&>>\!\"\$data_file\"}" )
+    csrv-color-cmd "$text[@]"
 
     # Print preamble on the center.
     q="$(msg %B{203}«««{39} Status for command: {41}$Config[x_ini_path]:t {203}»»»)"

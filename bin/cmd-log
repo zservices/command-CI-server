@@ -27,7 +27,6 @@ csrv-replace-vars INI
 
 # The local out file.
 outfile=$cmd:h/$cmd_name.out
-# x_* keys are extra, not from file.
 INI[x_ini_path]=$cmd
 
 # The main line of code.
