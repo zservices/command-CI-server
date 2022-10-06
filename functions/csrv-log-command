@@ -50,7 +50,6 @@ integer cnt=${Config[x_line_count]:-$LINES-3}
                 and: {33}$olog{174}\), exiting.
         return 3
     fi
-
     # Read last modification time stamp.
     builtin zstat +mtime -A mtime $log
 

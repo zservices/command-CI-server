@@ -43,8 +43,8 @@ text=( "$reply[@]" )
     local rundir=$Config[main__run-dir] pth=$Config[main__path] \
         fpth=$Config[main__fpath]
     typeset -gUx FPATH PATH
-    path=( "${(s.:.)${(@Q)${(@z)pth}}}" $path )
-    fpath=( "${(s.:.)${(@Q)${(@z)fpth}}}" $fpath )
+    csnon_empty $pth && path=( "${(s.:.)${(@Q)${(@z)pth}}}" $path )
+    csnon_empty $fpth && fpath=( "${(s.:.)${(@Q)${(@z)fpth}}}" $fpath )
 
     if [[ -n $rundir ]]; then
         command mkdir -p $rundir
