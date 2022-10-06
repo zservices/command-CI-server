@@ -14,7 +14,8 @@ for k v in ${(@kv)vars}; do
     # Replace any "~dirs", including home ("~").
     tmp=( "${(@)tmp//(#m)(#s)\~[a-zA-Z0-9_]#/"$(eval print "$MATCH")"}" )
     # Replace any variables.
-    tmp=( "${(@)tmp//(#m)\$(\{|)[a-zA-Z0-9:,._\{\}\(\)\[\]-]##(\}|)/"$(eval q=\"$MATCH\"; print -rn -- $q)"}" )
+    tmp=( "${(@)tmp//(#b)(([^\\]|(#s))([\\][\\])#)(\$(\{|)[a-zA-Z0-9:,._\{\}\(\)\[\]-]##(\}|))/$match[1]"$(eval q=\"$match[4]\"; print -rn -- $q)"}" )
+    tmp=( "${(Q)tmp[@]}" )
     : ${(@AP)var_name::="$tmp[@]"}
 done
 
