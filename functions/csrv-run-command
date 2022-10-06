@@ -2,13 +2,13 @@
 # Obtains the command to run and full path to log
 # in its directory and outputs to it plus two other
 # locations (/tmp and ~/.config/csrv)
-local -A Cfg
+local -A Config
 
 local CACHE var_name=$1 cmd_name=$2 data_file=$3
 local -a args
 shift 3
 
-Cfg=( "${(@PAkv)var_name}" )
+Config=( "${(@PAkv)var_name}" )
 CACHE=${ZSRV_THIS_CACHE:-${ZSH_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}}}
 CACHE+=/commandsrv
 
@@ -16,14 +16,14 @@ CACHE+=/commandsrv
 command mkdir -p $CACHE
 
 # Get the run entity.
-local cmd=$Cfg[main__runnable] tpe=$Cfg[main__type]
+local cmd=$Config[main__runnable] tpe=$Config[main__type]
 
 # Get the arguments.
 csrv-get-args $var_name
 args=( "$reply[@]" )
 
-local stdin=${Cfg[io__in]:-stdin} stdout=${Cfg[io__out]:-stdout} \
-        stderr=${Cfg[io__err]:-stderr}
+local stdin=${Config[io__in]:-stdin} stdout=${Config[io__out]:-stdout} \
+        stderr=${Config[io__err]:-stderr}
 local -a text=( "\"\${args[@]}\"" "&>>!\"\$CACHE/$cmd_name.out\""
               "&>>!\"\$data_file\"" )
 reply=( "$text[@]" )
@@ -40,8 +40,8 @@ text=( "$reply[@]" )
 # Run via eval to allow e.g.: cmd="env PATH=… command"
 # or cmd="command -C …"
 (
-    local rundir=$Cfg[main__run-path] pth=$Cfg[main__path] \
-        fpth=$Cfg[main__fpath]
+    local rundir=$Config[main__run-path] pth=$Config[main__path] \
+        fpth=$Config[main__fpath]
     path+=( "${(s.:.)${(@Q)${(@z)pth}}}" )
     fpath+=( "${(s.:.)${(@Q)${(@z)fpth}}}" )
     typeset -gUx FPATH PATH

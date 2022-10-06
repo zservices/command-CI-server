@@ -4,14 +4,14 @@ csrv-extend-typecmd-text() {
     shift 2
 
     local -a args=( "$@" )
-    local -A Cfg
-    Cfg=( "${(@PAkv)var_name}" )
+    local -A Config
+    Config=( "${(@PAkv)var_name}" )
 
-    local prefix="$Cfg[main__shell] -c"
+    local prefix="$Config[main__shell] -c"
 
     reply=()
-    tpe=$Cfg[main__type]
-    sh=$Cfg[main__shell]
+    tpe=$Config[main__type]
+    sh=$Config[main__shell]
 
     if [[ $tpe == source ]]; then 
         if [[ $sh != (none|) ]]; then
