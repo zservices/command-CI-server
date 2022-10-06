@@ -24,7 +24,7 @@ args=( "$reply[@]" )
 
 local stdin=${Config[io__in]:-stdin} stdout=${Config[io__out]:-stdout} \
         stderr=${Config[io__err]:-stderr}
-local -a text=( "\"\${args[@]}\"" "&>>!\"\$CACHE/$cmd_name.out\""
+local -a text=( "${args[@]}" "&>>!\"\$CACHE/$cmd_name.out\""
               "&>>!\"\$data_file\"" )
 reply=( "$text[@]" )
 
@@ -40,7 +40,7 @@ text=( "$reply[@]" )
 # Run via eval to allow e.g.: cmd="env PATH=… command"
 # or cmd="command -C …"
 (
-    local rundir=$Config[main__run-path] pth=$Config[main__path] \
+    local rundir=$Config[main__run-dir] pth=$Config[main__path] \
         fpth=$Config[main__fpath]
     typeset -gUx FPATH PATH
     path=( "${(s.:.)${(@Q)${(@z)pth}}}" $path )

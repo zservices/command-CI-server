@@ -24,7 +24,7 @@ args=( "$reply[@]" )
 
 local stdin=${Config[io__in]:-stdin} stdout=${Config[io__out]:-stdout} \
         stderr=${Config[io__err]:-stderr}
-local -a text=( "\"\${args[@]}\"" "&>>!\"\$CACHE/$cmd_name.out\""
+local -a text=( "${args[@]}" "&>>!\"\$CACHE/$cmd_name.out\""
               "&>>!\"\$data_file\"" )
 reply=( "$text[@]" )
 
@@ -66,7 +66,6 @@ text=( "$reply[@]" )
 
     text=( "${text[@]:#&>>\!\"\$CACHE/other.out\"}" )
     text=( "${text[@]:#\&>>\!\"\$data_file\"}" )
-    text=( "${text[@]/\"\$\{args\[@\]\}\"/$args[*]}" )
     csrv-color-cmd "$text[@]"
 
     # Print preamble on the center.
