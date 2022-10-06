@@ -39,7 +39,7 @@ state() {
 #
 
 # The local out file.
-outfile=$cmd:h/$cmd_name.out
+outfile=$cmd:h/_$cmd_name.out
 
 # The main line of code ↔ execution of the ini-file runnable.
 repeat 1 { csrv-run-command INI $cmd_name $outfile; exit_code=$?; }

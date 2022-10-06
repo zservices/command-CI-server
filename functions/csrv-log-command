@@ -1,0 +1,77 @@
+#!/usr/bin/env zsh
+# Obtains the command to run and full path to log
+# in its directory and outputs to it plus two other
+# locations (/tmp and ~/.config/csrv)
+
+local -A Config
+# In case running bare script, without plugin manager
+local CACHE var_name=$1 cmd_name=$2 data_file=$3
+local -a args
+shift 3
+Config=( "${(@PAkv)var_name}" )
+CACHE=${ZSRV_THIS_CACHE:-${ZSH_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}}}
+CACHE+=/commandsrv
+unset $var_name
+
+# Create cacbe dir.
+command mkdir -p $CACHE
+
+# Get the run entity.
+local cmd=$Config[main__runnable] tpe=$Config[main__type]
+
+# Get the arguments.
+csrv-get-args $var_name
+args=( "$reply[@]" )
+
+local stdin=${Config[io__in]:-stdin} stdout=${Config[io__out]:-stdout} \
+        stderr=${Config[io__err]:-stderr}
+local clog="$CACHE/$cmd_name.out" olog=$data_file
+integer cnt=${Config[x_line_count]:-$LINES-3}
+
+# Run via eval to allow e.g.: cmd="env PATH=… command"
+# or cmd="command -C …"
+{
+    local rundir=$Config[main__run-path] log hkey=CMD_LOG_TAIL_PID
+    integer mtime
+    typeset -gUx FPATH PATH
+
+    Plugins[$hkey]=0
+    # Prepend the paths.
+    csnon_empty $pth && path=( "${(s.:.)${(@Q)${(@z)pth}}}" $path )
+    csnon_empty $fpth && fpath=( "${(s.:.)${(@Q)${(@z)fpth}}}" $fpath )
+
+    # Set the log file to display ensuring it exists,
+    # and also setting access time (only).
+    command touch -a $olog $clog
+    [[ -r $olog ]] && log=$olog
+    [[ ! -r $log ]] && log=$clog
+    if [[ ! -f $log ]]; then
+        msg {203}Error:{174} no log exists \(checked paths: {33}$clog{174},\
+                and: {33}$olog{174}\), exiting.
+        return 3
+    fi
+
+    # Read last modification time stamp.
+    builtin zstat +mtime -A mtime $log
+
+    local tcount=$(((EPOCHSECONDS-mtime)/60))
+    if (( tcount )); then
+        tcount="{69}«««{34}$tcount{69}»»»{208} min."
+    else
+        tcount="{69}«««{201}$(( EPOCHSECONDS-mtime )){69}»»»{208} secs"
+    fi
+    msg %B{208}Command «{69}${(U)cmd_name}{208}» output, update:\
+     {41}$tcount ago. Tail of \
+        {69}${${${log:h}/$HOME/\~}//\//"{220}/{69}"}{220}/{70}$log:t{208}:
+
+    command tail -f -n $cnt $log &
+    # Save the PID of the background tail process.
+    Plugins[$hkey]=$(($!))
+    builtin trap 'kill -TERM $Plugins[CMD_LOG_TAIL_PID]; return 0;' INT
+}
+
+REPLY=${(M)Plugins[CMD_LOG_TAIL_PID]:#<->}
+[[ $REPLY = <-> ]]
+return $?
+
+# vim:ft=zsh:sw=4:sts=4:ts=8:et
