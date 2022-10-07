@@ -8,11 +8,11 @@ local qdir
 for qdir in $in_src_dirs; do
     tmp=( $qdir/*.(ini|cmd)(N) )
     if [[ ! -d $qdir || ! -r $qdir ]]; then
-        msg {208}Error{39}:{70} Directory \`{dir}$qdir{70}\` \
+        msg {208}Error{39}:{70} Directory \`{39}$qdir{70}\` \
             incorrect, skipping…
     else
-        if [[ -z $qdir ]]; then
-            msg {208}Warning{39}:{70} Directory \`{dir}$qdir{70}\` \
+        if [[ -z $tmp ]]; then
+            msg {208}Warning{39}:{70} Directory \`{39}$qdir{70}\` \
                 doesn\'t contain any command definitions.
         fi
         reply+=( $qdir )
