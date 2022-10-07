@@ -17,7 +17,7 @@ csrv-log-parse-opts() {
             -null=opt_null u=opt_null \
             -info=opt_info i=opt_info \
             -help=opt_help h=opt_help \
-            n::=opt_count
+            n:-=opt_count
     reply=("$@")
 }
 

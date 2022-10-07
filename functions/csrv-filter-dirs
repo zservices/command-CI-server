@@ -1,29 +1,29 @@
 #!/usr/bin/zsh
 
-csrv-filter-dirs() {
-    local -a in_src_dirs=($@)
-    reply=()
-    # Iterate over given dirs.
-    for prj in $in_src_dirs; do
-        tmp=( $prj/*.(ini|cmd) )
-        if [[ ! -d $prj || ! -r $prj ]]; then
-            msg {208}Error{39}:{70} Directory \`{dir}$prj{70}\` \
-                incorrect, skipping…
-        else
-            if [[ -z $prj ]]; then
-                msg {208}Warning{39}:{70} Directory \`{dir}$prj{70}\` \
-                    doesn\'t contain any command definitions.
-            fi
-            reply+=( $prj )
-        fi
-    done
+local -a in_src_dirs=($@)
+reply=()
 
-    # Final check.
-    if ((!$#reply)); then
-        msg {208}Error{39}:{70} No suitable directories found, \
-                exiting the {cmd}command-server{70}…
-        return 1
+# Iterate over given dirs.
+for prj in $in_src_dirs; do
+    tmp=( $prj/*.(ini|cmd)(N) )
+    if [[ ! -d $prj || ! -r $prj ]]; then
+        msg {208}Error{39}:{70} Directory \`{dir}$prj{70}\` \
+            incorrect, skipping…
+    else
+        if [[ -z $prj ]]; then
+            msg {208}Warning{39}:{70} Directory \`{dir}$prj{70}\` \
+                doesn\'t contain any command definitions.
+        fi
+        reply+=( $prj )
     fi
-}
+done
+
+# Final check.
+if ((!$#reply)); then
+    msg {208}Error{39}:{70} No suitable directories found, \
+            exiting the {cmd}command-server{70}…
+    return 1
+fi
+return 0
 
 # vim:ft=zsh:sw=4:sts=4:ts=8:et

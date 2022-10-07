@@ -32,6 +32,4 @@ autoload -Uz zcommand
 
 zmodload zsh/stat zsh/datetime zsh/system
 
-alias zcmd=zcommand
-
 # vim:ft=zsh:tw=80:sw=4:sts=4:et:foldmarker=[[[,]]]

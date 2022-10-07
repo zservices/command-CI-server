@@ -14,8 +14,11 @@ builtin setopt extendedglob warncreateglobal typesetsilent noshortloops \
 # Such global variable is expected to be typeset'd -g in the plugin.zsh
 # file. Here it's restored in case of the function being run as a script.
 typeset -gA Plugins
-Plugins[CMD_SRV_DIR]=$2
+Plugins[CMD_DIR]=$2
 Plugins[CMD_CUR_SUB_CMD]=$1
+Plugins[CMD_LIBEXEC_DIR]=$2/libexec
+# Export crucial paths.
+export CMD_DIR=$2 CMD_LIBEXEC_DIR=$2/libexec
 
 { zmodload zsh/system && zsystem supports flock
   Plugins+=( CMD_FLOCK_AVAIL $((!$?)) ); 
@@ -29,16 +32,16 @@ Plugins[CMD_CUR_SUB_CMD]=$1
 # Reach for scripts and functions
 local -Ua path fpath
 local -U PATH FPATH
-path+=( $Plugins[CMD_SRV_DIR]/bin )
-fpath+=( $Plugins[CMD_SRV_DIR]/functions )
+path+=( $Plugins[CMD_DIR]/bin )
+fpath+=( $Plugins[CMD_DIR]/functions )
 # Load all functions.
-autoload -Uz $Plugins[CMD_SRV_DIR]/functions/*~*\~(:t)
+autoload -Uz $Plugins[CMD_DIR]/functions/*~*\~(:t)
 
 # Cleanup on exit.
-trap 'fpath=( ${fpath[@]:#$Plugins[CMD_SRV_DIR]/functions} ); return 0' EXIT
-trap 'path=( ${path[@]:#$Plugins[CMD_SRV_DIR]/bin} ); return 0' EXIT
-trap 'fpath=( ${fpath[@]:#$Plugins[CMD_SRV_DIR]/functions} ); return 0' INT
-trap 'path=( ${path[@]:#$Plugins[CMD_SRV_DIR]/bin} ); return 0' INT
+trap 'fpath=( ${fpath[@]:#$Plugins[CMD_DIR]/functions} )' EXIT
+trap 'path=( ${path[@]:#$Plugins[CMD_DIR]/bin} )' EXIT
+trap 'fpath=( ${fpath[@]:#$Plugins[CMD_DIR]/functions} ); return 0' INT
+trap 'path=( ${path[@]:#$Plugins[CMD_DIR]/bin} ); return 0' INT
 local -a mbegin mend match reply
 integer MBEGIN MEND
 local MATCH REPLY

@@ -5,10 +5,11 @@ local cmd=$1 tpe=$2
 # No def file given?
 [[ -z $cmd ]] && {
     if [[ $tpe == command ]]; then
-        msg {208}Error: {41}Please give a command to run either by:\\n \
-                    {33}-%f a path to its definition file,\\n \
-                    {33}-%f a name \(requires correct CMD_COMMAND_PATH \
-                            variable set with its directory\).
+        msg {208}Error: {41}Please give a command definition either by:\\n \
+                    {33}-%f a path to it,\\n \
+                    {33}-%f a name.\\n\
+                A definition name requires {39}\$CMD_COMMAND_PATH%f \
+                            variable pointing to its directory.
     else
         msg {208}Error, file $tpe is required, please specify some.
     fi
@@ -60,6 +61,9 @@ for q in $dirs; do
     csrv-command-is-readable -q $q/$cmd && break
 done
 
-[[ -n $REPLY ]]
-
-return $?
+if [[ -z $REPLY ]]; then
+    msg {203}Error:{41} No command definition for %B\`{39}${(U)cmd}{41}\`%b \
+            found, exiting…
+    return 1
+fi
+return 0

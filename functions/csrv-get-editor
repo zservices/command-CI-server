@@ -1,0 +1,19 @@
+#!/usr/bin/env zsh
+
+local ed
+(( $+commands[$VISUAL] )) && ed=$VISUAL
+(( !$#ed && $+commands[$EDITOR] )) && ed=$EDITOR
+(( !$#ed && $+commands[mcedit] )) && ed=mcedit
+(( !$#ed && $+commands[nano] )) && ed=nano
+(( !$#ed && $+commands[vim] )) && ed=vim
+(( !$#ed && $+commands[emacs] )) && ed=emacs
+(( !$#ed && $+commands[micro] )) && ed=micro
+
+if (( !$#ed || !$+commands[$ed] )); then
+    msg %B{203}Error: {41}No suitable editor found, please set \$EDITOR, exiting…
+    return 7
+fi
+
+REPLY=$ed
+
+# vim:ft=zsh:sw=4:sts=4:ts=8:et

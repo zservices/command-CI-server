@@ -26,7 +26,7 @@ $( eval q="~$match[1]"; print -rn -- $q)}
 
 # -T ties a comma separated scalar with an array.
 local -TUx CMD_COMMAND_PATH in_src_dirs
-local -TUx COMMAND_PATH src_dirs
+local -TUx FILT_COMMAND_PATH src_dirs
 local prj tpe prev_tpe outfile cmd cmd_name
 integer i count lockfd exit_code
 local -a tmp
@@ -36,7 +36,7 @@ csrv-filter-dirs $in_src_dirs || exit 1
 src_dirs=( $reply )
 
 # Save the processed value and other Plugins hash fields.
-Plugins[CMD_COMMAND_PATH]=$COMMAND_PATH
+Plugins[CMD_COMMAND_PATH]=$FILT_COMMAND_PATH
 Plugins[CMD_CONF_INTERVAL]=${CMD_CONF_INTERVAL:=5}
 
 #
@@ -58,8 +58,8 @@ while ((1)); do
     for prj in $src_dirs; do
         i+=1
 
-        for cmd in $prj/*.(ini|cmd); do
-            cmd-run $cmd
+        for cmd in $prj/*.(ini|cmd)(N); do
+            $Plugins[CMD_LIBEXEC_DIR]/cmd-run $cmd
             exit_code=$?
             msg {208}COMMAND-SERVER:%f Command $cmd of {39}$prj:%f \
                 run with exit code $exit_code.
