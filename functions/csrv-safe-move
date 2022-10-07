@@ -1,0 +1,15 @@
+#!/usr/bin/env zsh
+# -*- mode: sh; sh-indentation: 4; indent-tabs-mode: nil; sh-basic-offset: 4; -*-
+
+local p=$1 q=$2
+
+[[ ! -e $1 ]] &&
+    { msg {208}Error:%f source file {33}$p%f doesn\'t exist; return 1;}
+csnon_empty $1 || return 7
+[[ -e $q ]] && command mv -f $q .${q}.old
+command ln "$p" "$q" || { msg {208}Error:%f \`ln $p $q\` failed; return 3;}
+command rm -f ${p:#/##} || { msg {208}Error:%f \`rm $p\` failed; return 2;}
+
+return 0
+
+# vim:ft=zsh:tw=80:sw=4:sts=4:et:foldmarker=[[[,]]]

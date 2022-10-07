@@ -1,0 +1,59 @@
+#!/usr/bin/env zsh
+# -*- mode: sh; sh-indentation: 4; indent-tabs-mode: nil; sh-basic-offset: 4; -*-
+
+# Copyright (c) 2022 Sebastian Gniazdowski
+
+# Bootstrap complete exec environment.
+builtin emulate -L zsh
+0=${${0:#$ZSH_ARGZERO}:-${(%):-%N}}
+0=${${(M)0##/*}:-$PWD/${0#./}}
+source $0:h:h/lib/common.snip.zsh cmd-run $0:h:h
+
+local -A Options
+local -a opt_help opt_qu opt_efmt opt_vfmt opt_exloc opt_extsk opt_pwd
+csrv-ctags-parse-opts() {
+    reply=()
+    builtin zparseopts -D -E -A Options -- \
+            -in:=opt_qu Q:=opt_qu \
+            -etags=opt_efmt e=opt_efmt \
+            -vtags=opt_vfmt v=opt_vfmt \
+            -exloc:=opt_exloc x:=opt_exloc \
+            -extask=opt_extsk t=opt_extsk \
+            -pwd=opt_pwd p=opt_pwd \
+            -help=opt_help h=opt_help || return 7
+    reply=("$@")
+}
+
+csrv-ctags-usage() {
+    msg The \`{40}uctags%f\` subcommand runs the {208}Universal Ctags%f \
+        on all task definition files with the {203}Iniconf%f file format \
+        set in order to create a tags index which can be then searched via \
+        any utility or editor that understands it, to allow quick searching \
+        and jumping to the corresponding lines in task definitions.
+    msg %B{39}Usage:%b%f
+    msg \\t%B{40}cmd%b ctags {39}"[options…]"%f \\x7bcommand-ID\\x7d
+    msg "{39}[-Q|--type]"%f\\t\ \ –\\t Change parser type from {203}Iniconf%f \
+            to something else \(multiple allowed with a period\), like C, Sh…
+    msg "{39}[-e|--etags]"%f\\t\ \ –\\t Generate Emacs {41}TAGS%f files \
+            \(default\)
+    msg "{39}[-v|--vtags]"%f\\t\ \ –\\t Generate Vim {41}tags%f files
+    msg "{39}[-x|--exloc]"%f\\t\ \ –\\t Additional paths \(files and dirs\) \
+            to search in addition to ones from {39}\$CMD_COMMAND_PATH%f, \
+            \(colon-separated\)
+    msg "{39}[-p|--pwd]"%f\\t\ \ –\\t Process ./ folder
+    msg "{39}[-t|--extask]"%f\\t\ \ –\\t Skip processing any dirs from \
+            {40}\$CMD_COMMAND_PATH
+}
+
+# Init code, options and usage.
+csrv-ctags-parse-opts "$@"||return $?
+(($#opt_help)) && {csrv-ctags-usage; return 0;}
+
+# The main line of code.
+repeat 1 {csrv-run-ctags Options $reply; exit_code=$?;}
+
+((!exit_code))||msg {208}Warning: %fexit code {41}$exit_code%f from operation
+
+return exit_code
+
+# vim:ft=zsh:tw=80:sw=4:sts=4:et:foldmarker=[[[,]]]

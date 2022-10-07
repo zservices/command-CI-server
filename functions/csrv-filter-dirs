@@ -1,20 +1,21 @@
 #!/usr/bin/zsh
 
-local -a in_src_dirs=($@)
+local -a in_src_dirs=($@) tmp
 reply=()
+local qdir
 
 # Iterate over given dirs.
-for prj in $in_src_dirs; do
-    tmp=( $prj/*.(ini|cmd)(N) )
-    if [[ ! -d $prj || ! -r $prj ]]; then
-        msg {208}Error{39}:{70} Directory \`{dir}$prj{70}\` \
+for qdir in $in_src_dirs; do
+    tmp=( $qdir/*.(ini|cmd)(N) )
+    if [[ ! -d $qdir || ! -r $qdir ]]; then
+        msg {208}Error{39}:{70} Directory \`{dir}$qdir{70}\` \
             incorrect, skipping…
     else
-        if [[ -z $prj ]]; then
-            msg {208}Warning{39}:{70} Directory \`{dir}$prj{70}\` \
+        if [[ -z $qdir ]]; then
+            msg {208}Warning{39}:{70} Directory \`{dir}$qdir{70}\` \
                 doesn\'t contain any command definitions.
         fi
-        reply+=( $prj )
+        reply+=( $qdir )
     fi
 done
 

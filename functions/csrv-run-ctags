@@ -1,0 +1,61 @@
+#!/usr/bin/env zsh
+# -*- mode: sh; sh-indentation: 4; indent-tabs-mode: nil; sh-basic-offset: 4; -*-
+
+(($+commands[ctags])) || {
+    msg {208}Error: %fNo {39}ctags%f binary found, install from \
+        {70}https://github.com/universal-ctags/ctags
+    return 1
+}
+
+if ! ctags --version |& grep -q "Universal Ctags"; then
+    msg {208}Error: %fNo {39}%BUniversal%b Ctags%f found, Exuberant \
+        Ctags isn\'t sufficient, you can get it here: \
+        {70}https://github.com/universal-ctags/ctags
+fi
+
+local var_name=$1
+
+shift
+local out=._tags
+local -A Opts=( "${(kv@)${(@PAkv)var_name}}" )
+local -a cmd=( command ctags -G -R --pattern-length-limit=250 -f $out )
+local -a locations
+
+
+cmd+=(-e)
+(( $+Opts[-v]||$+Opts[--vtags] )) && cmd=("${cmd[@]:#-e}")
+(( $+Opts[-e]||$+Opts[--etags] )) && cmd+=(-e)
+(( $+Opts[-Q]||$+Opts[--in] )) && 
+    cmd+=(--languages=Iniconf,$Opts[-Q]$Opts[--in]) || \
+    cmd+=(--languages=Iniconf)
+locations+=(${(s.:.):-$Opts[-x]:$Opts[--exloc]} $@)
+
+# Append also any task path
+if (($+Opts[--extask]+$+Opts[-t])); then
+    msg {208}Warning:%f not processing tasks from {39}\$CMD_COMMAND_PATH
+else
+    local -TU CMD_PATH=$CMD_COMMAND_PATH cmd_path
+    csrv-filter-dirs $cmd_path || return 1
+    locations+=($reply)
+fi
+
+
+local q=TAGS
+integer exit_code
+(($#locations||$+Opts[-p]||$+Opts[--pwd])) || {
+    msg {208}Error:%f No locations to process, exiting… $#locations
+    return 1
+}
+(($+Opts[--pwd]||$+Opts[-p]))&&locations+=($PWD)
+
+cmd+=( $locations )
+msg {208}Executing:%f $cmd…
+
+eval "${cmd[@]}"
+exit_code+=$?
+
+(($+Opts[-v]||$+Opts[--vtags])) && q=tags
+[[ -f $out ]] && {csrv-safe-move "$out" "$q"; exit_code+=$?;}
+
+return exit_code
+# vim:ft=zsh:tw=80:sw=4:sts=4:et:foldmarker=[[[,]]]
