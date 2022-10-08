@@ -3,15 +3,17 @@
 
 local p=${1:#/##} q=${2:#/##} verbose=$3
 
-if [[ ! -e $p || $p == /# ]] || ! csnon_empty "$p"; then
-    msg {208}Error:%f source file {33}\"$p\"%f doesn\'t exist
+if [[ ! -f $p ]] || ! csnon_empty "$p"; then
+    msg {208}Error:%f source file {33}\"$p\"%f doesn\'t exist, cannot \
+        move {39}${p##$PWD} {174}-\> {39}${q##$PWD}%f.
     return 1
 fi
+
 csrv-norm-path "$p" && p=$REPLY
 csrv-norm-path "$q" && q=$REPLY
 
 [[ -e $q ]] && command mv -f $q ${q:h}/.${q:t}.old
-if ! command ln "$p" "$q" || ! command rm -f ${p:#/##}; then
+if ! command ln "$p" "$q"; then
     msg {208}Error:%f {39}\`ln \"$p\" \"$q\"\`%f failed, retrying with \
             {39}\`mv\`%f…
     if ! command mv "$p" "$q"; then
@@ -24,6 +26,10 @@ if ! command ln "$p" "$q" || ! command rm -f ${p:#/##}; then
 else
         ((verbose))&&msg {208}Successfully moved to {41}$q:t{208} \
             with {39}\`ln\`%f.
+fi
+
+if ! command rm -f "${p:#/##}"; then
+        ((verbose))&&msg {208}Warning:%f cannot remove source file: {41}$p%f.
 fi
 
 return 0

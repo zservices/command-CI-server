@@ -4,12 +4,19 @@
 # Copyright (c) 2022 Sebastian Gniazdowski
 
 local q qout=${${1%%/##}:-/} it=$2 TMP
+integer verbose=$3 ec
 
 # Get a working, existing path to any folder given ↔ $qout or upper $qout/../
-if ! csrv-norm-path $qout; then
-    msg {208}Error:%f Cannot determine output file \(for the TAGS/tags \
-                index\). Try adapting {41}-o$f/{41}--out%f option, or skip it, \
-                to use the default \({39}./TAGS%f or {39}./tags%f\)
+csrv-norm-path "$qout" $verbose
+ec=$?
+if ((ec)); then
+    ((verbose))&&msg {208}Error:%f Cannot determine writable output path \
+            \(for the {39}TAGS/tags%f index file\(s\)\). Got a derived \
+                inaccessible \(file permisions\) path: %B{39}${REPLY:-./}%f%b \
+                Try adapting {41}-o/--out%f option, or skip it, \
+                to use the defaults.\\n \
+                Working directory has to be accessible \(writeable, etc.\) \
+                for the default {39}./TAGS%f or{39}./tags%f output locations.
 fi
 
 q=$REPLY
@@ -23,18 +30,18 @@ if [[ -d $q ]]; then
 fi
 
 # Append file name only, if not specified manually in the option.
-[[ -d $qout ]]&&qout=${${(M)qout:#(#i)(#m)*/TAGS}:-$qout/$TMP}
+[[ -d $qout ]]&&qout=$qout/$TMP
 
 # Make path absolute.
 [[ $qout != /* ]] && qout=$PWD/${qout#./}
 
-local _qout=${qout/$PWD/.} _q=${q/$PWD/.}
-[[ $_q == /# ]] && {_q=$PWD:t/$TMP; q=$PWD/$TMP;}
-[[ $_qout == /# ]] && { _qout=$PWD:t/$TMP; qout=$PWD/$TMP;}
+local _qout=${qout/$PWD(\/|)/./} _q=${q/$PWD(\/|)/./}
+[[ $_q == /# ]] && {_q=../$PWD:t/$TMP; q=$PWD/$TMP;}
+[[ $_qout == /# ]] && { _qout=../$PWD:t/$TMP; qout=$PWD/$TMP;}
 
 # Inform user that his path has been changed.
 if [[ $_qout != $_q  ]]; then
-    msg {208}Warning:%f {39}out file/dir path%f \({70}-o%f/{70}--out%f=\
+    msg {208}Warning:%f {39}output path%f \({70}-o%f/{70}--out%f=\
 {69}$_qout%f\) was incorrect, changed it to %B{40}$_q%f%b.
 fi
 
@@ -42,4 +49,5 @@ REPLY=$q
 
 [[ -n $REPLY ]]
 
+return ec+$?
 # vim:ft=zsh:tw=80:sw=4:sts=4:et:foldmarker=[[[,]]]

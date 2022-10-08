@@ -15,13 +15,14 @@ if ! ctags --version |& grep -q "Universal Ctags"; then
 fi
 
 local Qvar=$1
+integer verbose=$2
 
-shift
+shift 2
 local out=._tags.tmp q
 local -A Opts=( "${(kv@)${(@PAkv)Qvar}}" )
-local -a cmd=( command ctags -G -R --quiet --pattern-length-limit=250 -f $out )
+local -a cmd=( command ctags -G -R --quiet -f $out )
 local -a locations=( "$@" ) exc tmp
-
+integer ret
 
 (( $+Opts[-i] )) || cmd+=(-e)
 (( $+Opts[-Q]||$+Opts[--qualify] )) && 
@@ -35,14 +36,15 @@ exc=( "${exc[@]/(#s)(#m)*/--exclude=${(q)MATCH}}" )
 
 # Append also any task path
 if (($+Opts[--extask]+$+Opts[-t])); then
-    msg {208}Warning:%f not processing tasks from {39}\$CMD_COMMAND_PATH
+    ((verbose))&&msg {208}Warning:%f not processing tasks from {39}\$CMD_COMMAND_PATH
 else
     local -TU CMD_PATH=$CMD_COMMAND_PATH cmd_path
     csrv-filter-dirs $cmd_path || return 1
     locations+=($reply)
 fi
 
-csrv-resolve-out-store-path $Opts[-o] $+Opts[-i]
+csrv-resolve-out-store-path "$Opts[-o]" $+Opts[-i] $+Opts[-v]
+ret=$?
 
 q=$REPLY
 
@@ -51,12 +53,15 @@ Qvar=${Qvar}'[x_out_path]'
 : ${(P)Qvar::=$REPLY}
 
 integer exit_code
-[[ $q == /# || ! -d $q:h || ! -w $q:h || ! -x $q:h ]] && {
-    [[ ! -w $q ]]&&tmp="isn't writeable"||tmp="doesn't exist"
-    msg {208}Error:%f The specified {41}--out%f/{41}-o%f target file/dir \
+if (( ret )); then
+    local txt="isn't writeable or accessible"
+    [[ -f $q && (! -w $q:h || ! -x $q:h) ]]&&tmp=$txt
+    [[ ! -e $q && -d $q:h && (! -w $q:h || ! -x $q:h) ]]&&tmp=$txt
+    [[ ! -d $q:h ]]&&tmp="doesn't exist"
+    msg {208}Error:%f The specified {41}--out%f/{41}-o%f output path \
         \({39}$Opts[-o]%f\) $tmp, exiting…
     return 1
-}
+fi
 
 (($#locations||$+Opts[-p]||$+Opts[--pwd])) || {
     msg {208}Error:%f No locations to process, exiting…

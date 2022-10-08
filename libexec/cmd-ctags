@@ -11,6 +11,7 @@ source $0:h:h/lib/common.snip.zsh cmd-run $0:h:h
 
 local -A Options
 local -a opt_help opt_qu opt_efmt opt_ifmt opt_exc opt_extsk opt_pwd opt_out
+integer verbose
 csrv-ctags-parse-opts() {
     reply=()
     builtin zparseopts -D -E -A Options -- \
@@ -54,13 +55,14 @@ csrv-ctags-parse-opts "$@"||return $?
 : ${Options[-o]:=${Options[--out]:-$PWD}}
 (($+Options[--verbose])) && Options[-v]=1
 (($+Options[--itags]))&&Options[-i]=1
+verbose=$+Options[-v]
 
 # The main line of code. $reply are non-option args.
-repeat 1 {csrv-run-ctags Options $reply; exit_code=$?;}
+repeat 1 {csrv-run-ctags Options $verbose $reply; exit_code=$?;}
 
 if ((exit_code)); then
-    msg {208}Warning: %fnon-zero exit code %B{41}$exit_code%f%b from \
-        %B{39}ctags%f%b operation
+    ((verbose))&&msg {208}Warning: %fnon-zero exit code %B{41}$exit_code%f%b \
+        from %B{39}ctags%f%b operation
 fi
 
 local q qc

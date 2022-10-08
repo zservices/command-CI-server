@@ -32,7 +32,7 @@ integer i count lockfd exit_code
 local -a tmp
 local -A INI
 
-csrv-filter-dirs $in_src_dirs || exit 1
+csrv-filter-dirs 1 $in_src_dirs || exit 1
 src_dirs=( $reply )
 
 # Save the processed value and other Plugins hash fields.

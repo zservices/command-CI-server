@@ -1,5 +1,7 @@
 #!/usr/bin/zsh
 
+integer verbose=$1
+shift
 local -a in_src_dirs=($@) tmp
 reply=()
 local qdir
@@ -8,11 +10,11 @@ local qdir
 for qdir in $in_src_dirs; do
     tmp=( $qdir/*.(ini|cmd)(N) )
     if [[ ! -d $qdir || ! -r $qdir ]]; then
-        msg {208}Error{39}:{70} Directory \`{39}$qdir{70}\` \
+        ((verbose))&&msg {208}Error{39}:{70} Directory \`{39}$qdir{70}\` \
             doesn\'t exist, skipping it…
     else
         if [[ -z $tmp ]]; then
-            msg {208}Warning{39}:{70} Directory \`{39}$qdir{70}\` \
+            ((verbose))&&msg {208}Warning{39}:{70} Directory \`{39}$qdir{70}\` \
                 doesn\'t contain any command definitions.
         fi
         reply+=( $qdir )
@@ -21,7 +23,7 @@ done
 
 # Final check.
 if ((!$#reply)); then
-    msg {208}Error{39}:{70} No suitable directories found, \
+    msg %B{208}Error{39}:%b{70} No suitable directories found, \
             exiting the {cmd}command-server{70}…
     return 1
 fi
