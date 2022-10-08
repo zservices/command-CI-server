@@ -10,16 +10,18 @@ builtin emulate -L zsh
 source $0:h:h/lib/common.snip.zsh cmd-run $0:h:h
 
 local -A Options
-local -a opt_help opt_qu opt_efmt opt_vfmt opt_exloc opt_extsk opt_pwd
+local -a opt_help opt_qu opt_efmt opt_ifmt opt_exc opt_extsk opt_pwd opt_out
 csrv-ctags-parse-opts() {
     reply=()
     builtin zparseopts -D -E -A Options -- \
-            -in:=opt_qu Q:=opt_qu \
+            -qualify:=opt_qu Q:=opt_qu \
             -etags=opt_efmt e=opt_efmt \
-            -vtags=opt_vfmt v=opt_vfmt \
-            -exloc:=opt_exloc x:=opt_exloc \
+            -itags=opt_ifmt i=opt_ifmt \
+            -exc:=opt_exc x:=opt_exc \
             -extask=opt_extsk t=opt_extsk \
             -pwd=opt_pwd p=opt_pwd \
+            -out:=opt_out o:=opt_out \
+            -verbose v \
             -help=opt_help h=opt_help || return 7
     reply=("$@")
 }
@@ -27,33 +29,68 @@ csrv-ctags-parse-opts() {
 csrv-ctags-usage() {
     msg The \`{40}uctags%f\` subcommand runs the {208}Universal Ctags%f \
         on all task definition files with the {203}Iniconf%f file format \
-        set in order to create a tags index which can be then searched via \
+        set in order to create a tag index which can be then searched via \
         any utility or editor that understands it, to allow quick searching \
         and jumping to the corresponding lines in task definitions.
     msg %B{39}Usage:%b%f
     msg \\t%B{40}cmd%b ctags {39}"[options…]"%f \\x7bcommand-ID\\x7d
-    msg "{39}[-Q|--type]"%f\\t\ \ –\\t Change parser type from {203}Iniconf%f \
-            to something else \(multiple allowed with a period\), like C, Sh…
-    msg "{39}[-e|--etags]"%f\\t\ \ –\\t Generate Emacs {41}TAGS%f files \
+    msg "{39}[-Q spec|--qualify=spec]"%f\\t\ \ –\\t Change parser type from {203}Iniconf%f \
+            to something else \(multiple allowed with comma\), like C, Sh…
+    msg "{39}[-e|--etags]"%f\\t\ \ \ \ \ –\\t Generate Emacs {41}TAGS%f files \
             \(default\)
-    msg "{39}[-v|--vtags]"%f\\t\ \ –\\t Generate Vim {41}tags%f files
-    msg "{39}[-x|--exloc]"%f\\t\ \ –\\t Additional paths \(files and dirs\) \
-            to search in addition to ones from {39}\$CMD_COMMAND_PATH%f, \
-            \(colon-separated\)
-    msg "{39}[-p|--pwd]"%f\\t\ \ –\\t Process ./ folder
-    msg "{39}[-t|--extask]"%f\\t\ \ –\\t Skip processing any dirs from \
+    msg "{39}[-i|--itags]"%f\\t\ \ \ \ \ –\\t Generate vIm {41}tags%f files
+    msg "{39}[-x pattern|--exc]"%f\ \ \ –\\t Pattern to exclude paths that match
+    msg "{39}[-p|--pwd]"%f\\t\ \ \ \ \ –\\t Process ./ folder
+    msg "{39}[-t|--extask]"%f\\t\ \ \ \ \ –\\t Skip processing any dirs from \
             {40}\$CMD_COMMAND_PATH
+    msg "{39}[-o file|--out=file]"%f\\t\ \ –\\t Write output to file given
 }
 
 # Init code, options and usage.
 csrv-ctags-parse-opts "$@"||return $?
 (($#opt_help)) && {csrv-ctags-usage; return 0;}
 
-# The main line of code.
+# Reduce some options to one flag field.
+: ${Options[-o]:=${Options[--out]:-$PWD}}
+(($+Options[--verbose])) && Options[-v]=1
+(($+Options[--itags]))&&Options[-i]=1
+
+# The main line of code. $reply are non-option args.
 repeat 1 {csrv-run-ctags Options $reply; exit_code=$?;}
 
-((!exit_code))||msg {208}Warning: %fexit code {41}$exit_code%f from operation
+if ((exit_code)); then
+    msg {208}Warning: %fnon-zero exit code %B{41}$exit_code%f%b from \
+        %B{39}ctags%f%b operation
+fi
 
-return exit_code
+local q qc
+integer mtime exit
+q=$Options[x_out_path]
+
+if [[ $q == /#  || ! -d $q:h || ! -w $q || ! -e $q ]]; then
+    exit=30
+    q=$Options[-o]
+fi
+
+csrv-shorten-path 25 $q:h; qx="$reply"
+if [[ -f $q ]]; then
+    # Read last modification time stamp.
+    if zstat +mtime -A mtime "$q" &>$CMD_NULL; then
+        ((EPOCHSECONDS-mtime>3))&&exit=1
+    else
+        exit=1
+    fi
+else
+    exit=1
+fi
+if ((exit==0)); then
+    msg {39}File %B{27}$q:t{39}%b created in %B{41}$qx{39}%b dir.
+else
+    msg {208}WARNING: file %B{33}$q:t{208}%b in {41}$qx{208}%b \
+        wasn\'t updated
+fi
+
+# Between 1…9 means that index has been updated, despite problems.
+return $((exit_code+10*exit))
 
 # vim:ft=zsh:tw=80:sw=4:sts=4:et:foldmarker=[[[,]]]

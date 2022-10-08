@@ -1,0 +1,49 @@
+#!/usr/bin/env zsh
+# -*- mode: sh; sh-indentation: 4; indent-tabs-mode: nil; sh-basic-offset: 4; -*-
+
+# Copyright (c) 2022 Sebastian Gniazdowski
+
+#
+# Make path regular.
+#
+
+local qout=$1 inq=$1 q
+
+# No out path provided? → $PWD.
+csnon_empty $qout || qout=$PWD
+# Remove trailing /.
+qout=${${qout%%/##}:-/tmp/DUMMY_WARNING_ROOT_PATH_DETECTED}
+# Fix relative paths.
+[[ $qout != /* ]] && qout=$PWD/$qout
+
+# Remoe ./ from path.
+qout=${qout//.\/##/}
+# Remove //+ series from path.
+qout=${qout//\/##//}
+
+# Remove dir/.. component(s).
+while [[ $qout != /## && $qout == *[^/]##/../* ]]; do
+    qout=${qout/((\/|(#s))[^\/]##\/)(..)/}
+done
+
+[[ -f $qout || -d $qout ]] && q=$qout
+[[ ! -e $qout && -d $qout:h && $qout != /# ]] && q=$qout
+
+# Traverse qout up, searching for existing dir.
+if [[ -z $q ]]; then
+    while [[ (! -d $qout || ! -w $qout || ! -x $qout) && $qout != /# ]]; do
+        msg {27}Trying output file path: {41}$qout{79}… %B{208}fail
+        qout=$qout:h
+    done
+    # Found non root path? ↔ /something and more levels.
+    [[ $qout == /[^/]##* ]]&&q=$qout
+    msg %B{79}Found path:{39} «{41}$qout{39}»{79}. It is: \
+        {203}%B${${q:+usable}:-unusable}
+fi
+
+REPLY=$q
+
+# Return true if something changed.
+[[ $REPLY != $inq ]]
+
+# vim:ft=zsh:tw=80:sw=4:sts=4:et:foldmarker=[[[,]]]

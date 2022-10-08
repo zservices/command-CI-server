@@ -11,24 +11,27 @@ if ! ctags --version |& grep -q "Universal Ctags"; then
     msg {208}Error: %fNo {39}%BUniversal%b Ctags%f found, Exuberant \
         Ctags isn\'t sufficient, you can get it here: \
         {70}https://github.com/universal-ctags/ctags
+    return 1
 fi
 
-local var_name=$1
+local Qvar=$1
 
 shift
-local out=._tags
-local -A Opts=( "${(kv@)${(@PAkv)var_name}}" )
-local -a cmd=( command ctags -G -R --pattern-length-limit=250 -f $out )
-local -a locations
+local out=._tags.tmp q
+local -A Opts=( "${(kv@)${(@PAkv)Qvar}}" )
+local -a cmd=( command ctags -G -R --quiet --pattern-length-limit=250 -f $out )
+local -a locations=( "$@" ) exc tmp
 
 
-cmd+=(-e)
-(( $+Opts[-v]||$+Opts[--vtags] )) && cmd=("${cmd[@]:#-e}")
-(( $+Opts[-e]||$+Opts[--etags] )) && cmd+=(-e)
-(( $+Opts[-Q]||$+Opts[--in] )) && 
-    cmd+=(--languages=Iniconf,$Opts[-Q]$Opts[--in]) || \
+(( $+Opts[-i] )) || cmd+=(-e)
+(( $+Opts[-Q]||$+Opts[--qualify] )) && 
+    cmd+=(
+         --languages=Iniconf,${(j:,:)${(s:,:):-$Opts[-Q],$Opts[--qualify]}}) || \
     cmd+=(--languages=Iniconf)
-locations+=(${(s.:.):-$Opts[-x]:$Opts[--exloc]} $@)
+
+# Blocked path patterns.
+exc+=(${(s.:.):-$Opts[-x]:$Opts[--exc]})
+exc=( "${exc[@]/(#s)(#m)*/--exclude=${(q)MATCH}}" )
 
 # Append also any task path
 if (($+Opts[--extask]+$+Opts[-t])); then
@@ -39,23 +42,41 @@ else
     locations+=($reply)
 fi
 
+csrv-resolve-out-store-path $Opts[-o] $+Opts[-i]
 
-local q=TAGS
+q=$REPLY
+
+# Save for outer func.
+Qvar=${Qvar}'[x_out_path]'
+: ${(P)Qvar::=$REPLY}
+
 integer exit_code
-(($#locations||$+Opts[-p]||$+Opts[--pwd])) || {
-    msg {208}Error:%f No locations to process, exiting… $#locations
+[[ $q == /# || ! -d $q:h || ! -w $q:h || ! -x $q:h ]] && {
+    [[ ! -w $q ]]&&tmp="isn't writeable"||tmp="doesn't exist"
+    msg {208}Error:%f The specified {41}--out%f/{41}-o%f target file/dir \
+        \({39}$Opts[-o]%f\) $tmp, exiting…
     return 1
 }
+
+(($#locations||$+Opts[-p]||$+Opts[--pwd])) || {
+    msg {208}Error:%f No locations to process, exiting…
+    return 1
+}
+
 (($+Opts[--pwd]||$+Opts[-p]))&&locations+=($PWD)
 
-cmd+=( $locations )
-msg {208}Executing:%f $cmd…
+cmd+=( $exc $locations )
+(($+Options[--verbose])) && {
+    tmp=("${(@)cmd[3,-1]}")
+    csrv-shorten-path 25 "${(@)tmp}"; tmp=("$reply[@]")
+    msg %B{208}Executing:%f%b %B$cmd[2]%b $tmp
+}
+cmd+=( '2>>(grep -v "Warning.*open")' )
 
 eval "${cmd[@]}"
 exit_code+=$?
 
-(($+Opts[-v]||$+Opts[--vtags])) && q=tags
-[[ -f $out ]] && {csrv-safe-move "$out" "$q"; exit_code+=$?;}
+[[ -f $out ]] && {csrv-safe-move "$out" "$q" $+Opts[-v]; exit_code+=$?;}
 
 return exit_code
 # vim:ft=zsh:tw=80:sw=4:sts=4:et:foldmarker=[[[,]]]

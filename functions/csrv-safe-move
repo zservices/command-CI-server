@@ -1,14 +1,30 @@
 #!/usr/bin/env zsh
 # -*- mode: sh; sh-indentation: 4; indent-tabs-mode: nil; sh-basic-offset: 4; -*-
 
-local p=$1 q=$2
+local p=${1:#/##} q=${2:#/##} verbose=$3
 
-[[ ! -e $1 ]] &&
-    { msg {208}Error:%f source file {33}$p%f doesn\'t exist; return 1;}
-csnon_empty $1 || return 7
-[[ -e $q ]] && command mv -f $q .${q}.old
-command ln "$p" "$q" || { msg {208}Error:%f \`ln $p $q\` failed; return 3;}
-command rm -f ${p:#/##} || { msg {208}Error:%f \`rm $p\` failed; return 2;}
+if [[ ! -e $p || $p == /# ]] || ! csnon_empty "$p"; then
+    msg {208}Error:%f source file {33}\"$p\"%f doesn\'t exist
+    return 1
+fi
+csrv-norm-path "$p" && p=$REPLY
+csrv-norm-path "$q" && q=$REPLY
+
+[[ -e $q ]] && command mv -f $q ${q:h}/.${q:t}.old
+if ! command ln "$p" "$q" || ! command rm -f ${p:#/##}; then
+    msg {208}Error:%f {39}\`ln \"$p\" \"$q\"\`%f failed, retrying with \
+            {39}\`mv\`%f…
+    if ! command mv "$p" "$q"; then
+        msg {203}Error:%f {39}\`mv \"$p\" \"$q\"\`%f exited with: %B{40}$?.
+        return 3
+    else
+        ((verbose))&&msg {208}Successfully moved to {41}$q:t{208} \
+            with {39}\`mv\`%f.
+    fi
+else
+        ((verbose))&&msg {208}Successfully moved to {41}$q:t{208} \
+            with {39}\`ln\`%f.
+fi
 
 return 0
 

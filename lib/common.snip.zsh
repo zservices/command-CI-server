@@ -18,7 +18,9 @@ Plugins[CMD_DIR]=$2
 Plugins[CMD_CUR_SUB_CMD]=$1
 Plugins[CMD_LIBEXEC_DIR]=$2/libexec
 # Export crucial paths.
-export CMD_DIR=$2 CMD_LIBEXEC_DIR=$2/libexec
+CMD_FILE_CHARS='[[:alnum:]+_%@…\[\]\{\}\(\):.,\?\~\!\/–—-]'
+: ${CMD_NULL:=/dev/null}
+export CMD_DIR=$2 CMD_LIBEXEC_DIR=$2/libexec CMD_NULL CMD_FILE_CHARS
 
 { zmodload zsh/system && zsystem supports flock
   Plugins+=( CMD_FLOCK_AVAIL $((!$?)) ); 

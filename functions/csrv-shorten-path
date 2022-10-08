@@ -1,0 +1,22 @@
+#!/usr/bin/env zsh
+# -*- mode: sh; sh-indentation: 4; indent-tabs-mode: nil; sh-basic-offset: 4; -*-
+
+# Copyright (c) 2022 Sebastian Gniazdowski
+
+integer max_len=$1
+shift
+local -a tmp=( "$@" )
+
+tmp=(
+    ${(@)${(@)tmp//$HOME(\/|(#e))/\~/}//(#m)(#b)($~CMD_FILE_CHARS)##/\
+${${(M)MATCH##?(#c$max_len,$max_len)}:+%B{208}*%f%b}$MATCH[-max_len+1,-1]}
+)
+
+reply=( "$tmp[@]" )
+
+[[ "$*" != "$reply[*]" ]]
+
+# True if anything has been done.
+return $?
+
+# vim:ft=zsh:tw=80:sw=4:sts=4:et:foldmarker=[[[,]]]
