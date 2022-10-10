@@ -49,7 +49,7 @@ csnon_empty $fpth && fpath=( "${(s.:.)${(@Q)${(@z)fpth}}}" $fpath )
             timtxt="{41}$p%f secs"
         fi
         # Spot an old file
-        ((timcnt - mtime[q]>300))
+        ((p=timcnt - mtime[q]<300))
         if ((mtime[q]!=fcnt)); then
             if ((!esum)); then
                 msg {70}"[$q/$#mtime]" {140}$chk[q]:t%f varied at $timtxt ago \
@@ -59,8 +59,10 @@ csnon_empty $fpth && fpath=( "${(s.:.)${(@Q)${(@z)fpth}}}" $fpath )
             fi
             esum+=1
         else
-            msg {70}"[$q/$#mtime]" {140}$chk[q]%f fresh from $timtxt ago \
-                !{39}${(U)cmd_name}.
+            local etxt=
+            ((p))&&local etxt="(<5 min) "
+            msg {70}"[$q/$#mtime]" {140}$chk[q]%f fresh from $etxt$timtxt ago \
+                    !{39}${(U)cmd_name}.
             isum+=1
         fi
     }
