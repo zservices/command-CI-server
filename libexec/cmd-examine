@@ -1,0 +1,47 @@
+#!/usr/bin/env zsh
+# -*- mode: sh; sh-indentation: 4; indent-tabs-mode: nil; sh-basic-offset: 4; -*-
+
+# Copyright (c) 2022 Sebastian Gniazdowski
+
+# Bootstrap complete exec environment.
+builtin emulate -L zsh
+0=${${0:#$ZSH_ARGZERO}:-${(%):-%N}}
+0=${${(M)0##/*}:-$PWD/${0#./}}
+source $0:h:h/lib/common.snip.zsh cmd-run $0:h:h
+
+local cmd=$1 cmd_name=$1:t:r
+integer exit_code=1
+
+csrv-check-file "$cmd" command || return $?
+cmd=$REPLY
+
+# Read command definition.
+@str-read-toml $cmd INI || {
+    msg {203}Warning:{174} problems reading command definition \
+        \(file: {41}$cmd{174}\)
+    return 1
+}
+
+# Replace any special sequences like %var or $var.
+csrv-replace-vars INI
+
+state() {
+    local out=$1:h/$2.state
+    shift 2
+    print -r -- $@ >! $out
+}
+
+#
+# Run cmd catching its output.
+#
+
+# The local out file.
+outfile=$cmd:h/_$cmd_name.out
+outfile=${${(M)outfile:#\/*}:-$PWD/${outfile##.\/}}
+# The main line of code ↔ execution of the ini-file runnable.
+repeat 1 { csrv-examine-on-update-of INI $cmd_name $outfile; exit_code=$?; }
+
+csrv-wait-for-task $cmd $cmd_name ${(M)Plugins[CMD_LOG_CMD_PID]:#<->} $outfile
+return exit_code
+
+# vim:ft=zsh:tw=80:sw=4:sts=4:et:foldmarker=[[[,]]]

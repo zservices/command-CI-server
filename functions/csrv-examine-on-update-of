@@ -1,0 +1,87 @@
+#!/usr/bin/env zsh
+
+local -A Config
+local CACHE var_name=$1 cmd_name=$2 data_file=$3
+local -a args
+shift 3
+Config=( "${(@PAkv)var_name}" )
+CACHE=${ZSRV_THIS_CACHE:-${ZSH_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}}}
+CACHE+=/commandsrv
+
+# Create cacbe dir.
+command mkdir -p $CACHE
+
+# Get the run entity.
+local cmd=$Config[main__runnable] tpe=$Config[main__type]
+
+# Get the arguments.
+csrv-get-args $var_name
+args=( "$reply[@]" )
+
+local clog="$CACHE/$cmd_name.out" olog=$data_file
+
+# Run via eval to allow e.g.: cmd="env PATH=… command"
+# or cmd="command -C …"
+local runpth=$Config[main__run-path] hkey=CMD_UPDATE_CMD_PID timtxt
+local -a chk=(${(@z)Config[activation__on-update-of]})
+local -a mtime
+integer pid q p esum isum
+typeset -gUx FPATH PATH
+#schk=( "${chk[@]//(#m)$~CMD_FILE_CHARS##/{${MATCH##?(#c25,25}
+Plugins[$hkey]=0
+# Prepend the paths.
+csnon_empty $pth && path=( "${(s.:.)${(@Q)${(@z)pth}}}" $path )
+csnon_empty $fpth && fpath=( "${(s.:.)${(@Q)${(@z)fpth}}}" $fpath )
+
+(
+    builtin cd -q ${runpth:-./}
+    # Read last modification time stamp.
+    builtin zstat +mtime -A mtime $chk
+    repeat $#mtime {
+        q+=1
+        local tim_pth=$chk[q]:h/.$chk[q]:t.time
+        {integer timcnt=$EPOCHSECONDS fcnt=${${:-$(<$tim_pth)}:-$EPOCHSECONDS};} \
+            &>$CMD_NULL 
+        p=timcnt-mtime[q]
+        if ((p/60>0)); then
+            timtxt="{41}$((p/60))%f mins"
+        else
+            timtxt="{41}$p%f secs"
+        fi
+        # Spot an old file
+        ((timcnt - mtime[q]>300))
+        if ((mtime[q]!=fcnt)); then
+            if ((!esum)); then
+                msg {70}"[$q/$#mtime]" {140}$chk[q]:t%f varied at $timtxt ago \
+                    → %B{39}${(U)cmd_name}%f%b task
+                cmd run $cmd_name; exit_code=$?
+                printf $mtime[q]\\n >| $tim_pth
+            fi
+            esum+=1
+        else
+            msg {70}"[$q/$#mtime]" {140}$chk[q]%f fresh from $timtxt ago \
+                !{39}${(U)cmd_name}.
+            isum+=1
+        fi
+    }
+    if ((!esum)); then
+        msg {203}Examine status:%f tested {41}$#mtime%f files, all \
+            are to date → !%B{39}${(U)cmd_name}%f%b.
+    else
+        msg {203}Examine status:%f tested {41}$#mtime%f files, \
+            {41}$esum%f updated → %B{39}${(U)cmd_name}%f%b \
+                executed.
+    fi
+)
+
+# The main line of code ↔ execution of the ini-file runnable.
+
+# Save the PID of the background tail process.
+Plugins[$hkey]=$(($!))
+builtin trap 'kill -TERM $Plugins[CMD_LOG_CMD_PID]; return 0;' INT
+
+REPLY=${(M)Plugins[CMD_LOG_CMD_PID]:#<->}
+[[ $REPLY = <-> ]]
+return $?
+
+# vim:ft=zsh:sw=4:sts=4:ts=8:et

@@ -24,9 +24,8 @@ Plugins+=( CMD_DIR "${0:h}"
     CMD_CONF_SETUP_ALIAS "$CMD_CONF_SETUP_ALIAS" )
 
 # Make the variables used by command-server exported.
-: ${CMD_NULL:=/dev/null}
-export CMD_DIR="${0:h}" CMD_NULL CMD_CONF_INTERVAL CMD_COMMAND_PATH \
-    CMD_CONF_ARGS CMD_CONF_PAUSE_AFTER CMD_CONF_SETUP_ALIAS
+export CMD_DIR="${0:h}" CMD_NULL=${CMD_NULL:-/dev/null} CMD_CONF_INTERVAL \
+    CMD_COMMAND_PATH CMD_CONF_ARGS CMD_CONF_PAUSE_AFTER CMD_CONF_SETUP_ALIAS
 
 # The functions/scripts provided by the plugin
 autoload -Uz zcommand

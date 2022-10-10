@@ -1,0 +1,12 @@
+#!/usr/bin/env zsh
+
+local cmd=$1 cmd_name=$2 pid=$3 outfile=$4
+
+state $cmd $cmd_name ongoing $pid $outfile
+wait $REPLY
+exit_code+=$?
+state $cmd $cmd_name finished $exit_code $outfile
+
+return exit_code
+# vim:ft=zsh:sw=4:sts=4:ts=8:et
+
