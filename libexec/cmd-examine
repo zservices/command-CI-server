@@ -42,6 +42,7 @@ outfile=${${(M)outfile:#\/*}:-$PWD/${outfile##.\/}}
 repeat 1 { csrv-examine-on-update-of INI $cmd_name $outfile; exit_code=$?;}
 ((exit_code)) && repeat 1 { csrv-examine INI $cmd_name $outfile; exit_code=$?;}
 ((REPLY>0))&&csrv-wait-for-task $cmd $cmd_name ${(M)REPLY:#<->} $outfile
+LANG=C sleep 0.5
 return exit_code
 
 # vim:ft=zsh:tw=80:sw=4:sts=4:et:foldmarker=[[[,]]]

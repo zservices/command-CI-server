@@ -36,7 +36,7 @@ csnon_empty $fpth && fpath=( "${(s.:.)${(@Q)${(@z)fpth}}}" $fpath )
 (
     builtin cd -q ${runpth:-./}
     # Read last modification time stamp.
-    [[ -n $chk ]]&&builtin zstat +mtime -A mtime $chk
+    {[[ -n $chk ]]&&builtin zstat +mtime -A mtime $chk;}&>$CMD_NULL
     repeat $#mtime {
         q+=1
         local tim_pth=$chk[q]:h/.$chk[q]:t.time
@@ -91,7 +91,7 @@ Plugins[$hkey]=$(($!))
 builtin trap 'kill -TERM $Plugins[CMD_EX_PID]; return 0;' INT
 
 REPLY=${(M)Plugins[$hkey]:#<->}
-[[ $REPLY = <-> && $REPLY -gt 0 ]]
+[[ $REPLY = <-> ]]&&((REPLY>0))
 return $?
 
 # vim:ft=zsh:sw=4:sts=4:ts=8:et

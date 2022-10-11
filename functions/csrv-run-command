@@ -17,7 +17,7 @@ command mkdir -p $CACHE
 
 # Get the run entity.
 local cmd=$Config[main__runnable] tpe=$Config[main__type]
-
+Config[x_ini_loc]=$cmd_name
 # Get the arguments.
 csrv-get-args $var_name
 args=( "$reply[@]" )

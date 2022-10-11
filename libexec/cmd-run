@@ -27,6 +27,7 @@ cmd=$REPLY
 csrv-replace-vars INI
 #@str-dump INI
 #print qq $INI[main__fpath]
+INI[x_ini_path]=$cmd
 
 state() {
     local out=$1:h/$2.state
@@ -52,3 +53,4 @@ state $cmd $cmd_name finished RET:$exit_code $outfile
 return exit_code
 
 # vim:ft=zsh:tw=80:sw=4:sts=4:et:foldmarker=[[[,]]]
+
