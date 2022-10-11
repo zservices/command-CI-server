@@ -36,7 +36,7 @@ csnon_empty $fpth && fpath=( "${(s.:.)${(@Q)${(@z)fpth}}}" $fpath )
 (
     builtin cd -q ${runpth:-./}
     # Read last modification time stamp.
-    builtin zstat +mtime -A mtime $chk
+    [[ -n $chk ]]&&builtin zstat +mtime -A mtime $chk
     repeat $#mtime {
         q+=1
         local tim_pth=$chk[q]:h/.$chk[q]:t.time
@@ -54,7 +54,6 @@ csnon_empty $fpth && fpath=( "${(s.:.)${(@Q)${(@z)fpth}}}" $fpath )
             if ((!esum)); then
                 msg {70}"[$q/$#mtime]" {140}$chk[q]:t%f varied at $timtxt ago \
                     → %B{39}${(U)cmd_name}%f%b task
-                cmd run $cmd_name; exit_code=$?
                 printf $mtime[q]\\n >| $tim_pth
             fi
             esum+=1
@@ -67,23 +66,32 @@ csnon_empty $fpth && fpath=( "${(s.:.)${(@Q)${(@z)fpth}}}" $fpath )
         fi
     }
     if ((!esum)); then
-        msg {203}Examine status:%f tested {41}$#mtime%f files, all \
-            are to date → !%B{39}${(U)cmd_name}%f%b.
+        msg %B{39}${(U)cmd_name}%f%b: Examine status: \
+            tested {41}$#mtime%f files, all \
+            are up to date.
     else
-        msg {203}Examine status:%f tested {41}$#mtime%f files, \
-            {41}$esum%f updated → %B{39}${(U)cmd_name}%f%b \
-                executed.
+        msg %B{39}${(U)cmd_name}%f%b: Examine status: \
+            tested {41}$#mtime%f files, \
+            {41}\#$esum%f amended → command executed.
     fi
+
+    return $((esum>0))
 )
 
-# The main line of code ↔ execution of the ini-file runnable.
-
 # Save the PID of the background tail process.
-Plugins[$hkey]=$(($!))
-builtin trap 'kill -TERM $Plugins[CMD_LOG_CMD_PID]; return 0;' INT
+esum=$?
+if ((esum)); then
+    # The main line of code ↔ execution of the ini-file runnable.
+    msg {208}Task %B{39}${(U)cmd_name}%f%b output:
+    repeat 1 {cmd run $cmd_name&;}
+    Plugins[$hkey]=$(($!))
+fi
 
-REPLY=${(M)Plugins[CMD_LOG_CMD_PID]:#<->}
-[[ $REPLY = <-> ]]
+Plugins[$hkey]=$(($!))
+builtin trap 'kill -TERM $Plugins[CMD_EX_PID]; return 0;' INT
+
+REPLY=${(M)Plugins[$hkey]:#<->}
+[[ $REPLY = <-> && $REPLY -gt 0 ]]
 return $?
 
 # vim:ft=zsh:sw=4:sts=4:ts=8:et
