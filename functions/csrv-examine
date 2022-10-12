@@ -1,0 +1,92 @@
+#!/usr/bin/env zsh
+
+local -A Config
+local CACHE var_name=$1 cmd_name=$2 data_file=$3
+local -a args
+shift 3
+Config=( "${(@PAkv)var_name}" )
+CACHE=${ZSRV_THIS_CACHE:-${ZSH_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}}}
+CACHE+=/commandsrv
+
+# Create cacbe dir.
+command mkdir -p $CACHE
+
+# Get the run entity.
+local cmd=$Config[main__runnable] tpe=$Config[main__type]
+
+# Get the arguments.
+csrv-get-args $var_name
+args=( "$reply[@]" )
+
+local clog="$CACHE/$cmd_name.out" olog=$data_file
+
+# Run via eval to allow e.g.: cmd="env PATH=… command"
+# or cmd="command -C …"
+local runpth=$Config[main__run-path] hkey=CMD_UPDATE_CMD_PID timtxt
+local -a chk=(${(@z)Config[activation__on-update-of]})
+local if=${(@z)Config[activation__if]} \
+    interval=${(@z)Config[activation__interval]} \
+    first_after=${(@z)Config[activation__first-after]} \
+    skip_first=${(@z)Config[activation__skip-first]}
+local begtime=${EPOCHSECONDS:-$(date '+%s')}
+integer pid q p k
+typeset -gUx FPATH PATH
+#schk=( "${chk[@]//(#m)$~CMD_FILE_CHARS##/{${MATCH##?(#c25,25}
+Plugins[$hkey]=0
+# Prepend the paths.
+csnon_empty $pth && path=( "${(s.:.)${(@Q)${(@z)pth}}}" $path )
+csnon_empty $fpth && fpath=( "${(s.:.)${(@Q)${(@z)fpth}}}" $fpath )
+
+(
+    integer mark
+    local -a mtime
+    builtin cd -q ${runpth:-./}
+    # Read last modification time stamp.
+    {builtin zstat +mtime -A mtime $chk}&>$CMD_NULL
+
+    for p in $mtime; do 
+        local tim_pth=$chk[++q]:h/.$chk[q]:t.time
+        {integer fcnt=${${:-$(<$tim_pth)}:-$EPOCHSECONDS};} &>$CMD_NULL 
+        ((mark=mtime[q]-fcnt>0,mark>0))&&break
+    done
+
+    p=mtime[q]-fcnt
+    # Two next events…
+    if ((p%interval>1)); then
+        mark=1
+    elif [[ -n $if ]] && eval ${${(M)if#:(\[\[||\(\()(*)([\)][\)]||\]\])}:-"[[ $if ]]"}; then
+        msg %B{39}${(U)cmd_name}%f%b: Examine status: \
+            %B{30}if%f%b-predicate meet
+        mark=3
+    fi
+    if (( first_after && mark && mark==1 )); then
+        if ((p<first_after));then
+            msg %B{39}${(U)cmd_name}%f%b: Examine status: \
+                $p secs \< %B{30}first_after%f%b\[$first_after\],\
+                execute withdrawn
+            mark=0
+        fi
+    fi
+
+    if ((!mark)); then
+        msg %B{39}${(U)cmd_name}%f%b: {203}Examine status:%f No predicate meet
+    fi
+    return mark
+)
+# Save exit value
+integer exit_code=$?
+
+# The main line of code ↔ execution of the ini-file runnable.
+if ((exit_code)); then
+    repeat 1 {cmd run $cmd_name&;exit_code=$?;}
+fi
+
+# Save the PID of the background tail process.
+Plugins[$hkey]=$exit_code
+builtin trap 'kill -TERM $Plugins[CMD_LOG_CMD_PID]; return 0;' INT
+
+REPLY=${(M)Plugins[CMD_LOG_CMD_PID]:#<->}
+[[ $REPLY = <-> ]]
+return $?
+
+# vim:ft=zsh:sw=4:sts=4:ts=8:et

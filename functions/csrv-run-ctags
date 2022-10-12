@@ -39,7 +39,7 @@ if (($+Opts[--extask]+$+Opts[-t])); then
     ((verbose))&&msg {208}Warning:%f not processing tasks from {39}\$CMD_COMMAND_PATH
 else
     local -TU CMD_PATH=$CMD_COMMAND_PATH cmd_path
-    csrv-filter-dirs $cmd_path || return 1
+    csrv-filter-dirs $verbose $cmd_path || return 1
     locations+=($reply)
 fi
 
