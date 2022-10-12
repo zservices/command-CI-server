@@ -58,6 +58,7 @@ if (( ret )); then
     [[ -f $q && (! -w $q:h || ! -x $q:h) ]]&&tmp=$txt
     [[ ! -e $q && -d $q:h && (! -w $q:h || ! -x $q:h) ]]&&tmp=$txt
     [[ ! -d $q:h ]]&&tmp="doesn't exist"
+    [[ $q:h == $PWD ]]&&tmp="is incorrect"
     msg {208}Error:%f The specified {41}--out%f/{41}-o%f output path \
         \({39}$Opts[-o]%f\) $tmp, exiting…
     return 1

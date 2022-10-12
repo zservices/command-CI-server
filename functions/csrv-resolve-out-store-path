@@ -12,7 +12,7 @@ ec=$?
 if ((ec)); then
     ((verbose))&&msg {208}Error:%f Cannot determine writable output path \
             \(for the {39}TAGS/tags%f index file\(s\)\). Got a derived \
-                inaccessible \(file permisions\) path: %B{39}${REPLY:-./}%f%b \
+                inaccessible \(file permisions\) path: %B{39}${REPLY:-/}%f%b. \
                 Try adapting {41}-o/--out%f option, or skip it, \
                 to use the defaults.\\n \
                 Working directory has to be accessible \(writeable, etc.\) \
