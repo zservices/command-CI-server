@@ -7,7 +7,7 @@
 # and `ZSRV_ID`.
 # These are the only two variables obtained from p-msg and should
 # be exported (apart from ZERO).
-return
+
 0="${${ZERO:-${0:#$ZSH_ARGZERO}}:-${(%):-%N}}"
 0="${${(M)0:#/*}:-$PWD/$0}"
 

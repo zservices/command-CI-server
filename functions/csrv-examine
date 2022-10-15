@@ -25,11 +25,10 @@ local clog="$CACHE/$cmd_name.out" olog=$data_file
 local runpth=$Config[main__run-path] hkey=CMD_UPDATE_CMD_PID timtxt
 local -a chk=(${(@z)Config[activation__on-update-of]})
 local if=${(@z)Config[activation__if]} \
-    interval=${(@z)Config[activation__interval]} \
     first_after=${(@z)Config[activation__first-after]} \
     skip_first=${(@z)Config[activation__skip-first]}
 local begtime=${EPOCHSECONDS:-$(date '+%s')}
-integer pid q p k
+integer pid q p k interval=${(@z)Config[activation__interval]}
 typeset -gUx FPATH PATH
 #schk=( "${chk[@]//(#m)$~CMD_FILE_CHARS##/{${MATCH##?(#c25,25}
 Plugins[$hkey]=0
@@ -54,7 +53,8 @@ csnon_empty $fpth && fpath=( "${(s.:.)${(@Q)${(@z)fpth}}}" $fpath )
     # Two next events…
     if ((p%interval>1)); then
         mark=1
-    elif [[ -n $if ]] && eval ${${(M)if#:(\[\[||\(\()(*)([\)][\)]||\]\])}:-"[[ $if ]]"}; then
+    elif [[ -n $if ]] && eval ${${(M)if#:(\[\[||\(\()(*)([\)][\)]||\]\])}:-"[[ $MATCH ]]"}; 
+    then
         msg %B{39}${(U)cmd_name}%f%b: Examine status: \
             %B{30}if%f%b-predicate meet
         mark=3
