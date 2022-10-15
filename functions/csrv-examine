@@ -51,9 +51,9 @@ csnon_empty $fpth && fpath=( "${(s.:.)${(@Q)${(@z)fpth}}}" $fpath )
 
     p=mtime[q]-fcnt
     # Two next events…
-    if ((p%interval>1)); then
+    if ((interval && (p%interval)>1)); then
         mark=1
-    elif [[ -n $if ]] && eval ${${(M)if#:(\[\[||\(\()(*)([\)][\)]||\]\])}:-"[[ $MATCH ]]"}; 
+    elif [[ -n $if ]] && eval ${${(M)if#:(\[\[||\(\()(*)([\)][\)]||\]\])}:-"[[ $if ]]"}; 
     then
         msg %B{39}${(U)cmd_name}%f%b: Examine status: \
             %B{30}if%f%b-predicate meet

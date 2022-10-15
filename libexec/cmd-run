@@ -9,7 +9,6 @@ builtin emulate -L zsh
 0=${${(M)0##/*}:-$PWD/${0#./}}
 source $0:h:h/lib/common.snip.zsh cmd-run $0:h:h
 
-print -l $0 $ZSH_ARGZERO >> /tmp/reply
 local cmd=$1 cmd_name=$1:t:r
 integer exit_code=1
 
