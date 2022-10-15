@@ -59,10 +59,10 @@ while ((1)); do
         i+=1
 
         for cmd in $prj/*.(ini|cmd)(N); do
-            $Plugins[CMD_LIBEXEC_DIR]/cmd-run $cmd
+            $Plugins[CMD_LIBEXEC_DIR]/cmd-examine $cmd
             exit_code=$?
             msg {208}COMMAND-SERVER:%f Command $cmd of {39}$prj:%f \
-                run with exit code $exit_code.
+                examine with exit code $exit_code.
         done
     done
 done
