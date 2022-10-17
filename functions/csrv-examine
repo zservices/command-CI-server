@@ -39,6 +39,10 @@ csnon_empty $fpth && fpath=( "${(s.:.)${(@Q)${(@z)fpth}}}" $fpath )
 (
     integer mark
     local -a mtime
+
+    if [[ $Config[main__disabled] == (1|yes|true) ]]; then
+        return 1
+    fi
     builtin cd -q ${runpth:-./}
     # Read last modification time stamp.
     {builtin zstat +mtime -A mtime $chk}&>$CMD_NULL
@@ -71,22 +75,22 @@ csnon_empty $fpth && fpath=( "${(s.:.)${(@Q)${(@z)fpth}}}" $fpath )
     if ((!mark)); then
         msg %B{39}${(U)cmd_name}%f%b: {203}Examine status:%f No predicate meet
     fi
-    return mark
+    return $((!mark))
 )
 # Save exit value
 integer exit_code=$?
 
 # The main line of code ↔ execution of the ini-file runnable.
-if ((exit_code)); then
+if ((!exit_code)); then
     repeat 1 {cmd run $cmd_name&;exit_code=$?;}
 fi
 
 # Save the PID of the background tail process.
-Plugins[$hkey]=$exit_code
+Plugins[$hkey]=$REPLY
 builtin trap 'kill -TERM $Plugins[CMD_LOG_CMD_PID]; return 0;' INT
 
 REPLY=${(M)Plugins[CMD_LOG_CMD_PID]:#<->}
-[[ $REPLY = <-> ]]
-return $?
+[[ $REPLY = <-> && $REPLY != 0 ]]
+return $(($?+exit_code))
 
 # vim:ft=zsh:sw=4:sts=4:ts=8:et
