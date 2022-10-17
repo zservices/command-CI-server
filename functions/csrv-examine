@@ -13,6 +13,8 @@ command mkdir -p $CACHE
 
 # Get the run entity.
 local cmd=$Config[main__runnable] tpe=$Config[main__type]
+typeset -gx CMD_BG_RUN
+Config[x_bg_run]=${CMD_BG_RUN:=0}
 
 # Get the arguments.
 csrv-get-args $var_name
@@ -40,9 +42,14 @@ csnon_empty $fpth && fpath=( "${(s.:.)${(@Q)${(@z)fpth}}}" $fpath )
     integer mark
     local -a mtime
 
-    if [[ $Config[main__disabled] == (1|yes|true) ]]; then
+    if [[ $Config[main__disabled] == (1|yes|true) ||
+        ($Config[main__disabled] == manual && $Config[x_bg_run] == 1) ]]
+    then
+        msg %B{39}${(U)cmd_name}%f%b disabled is set to \
+            \`{203}$Config[main__disabled]%f\`, skipping…
         return 1
     fi
+
     builtin cd -q ${runpth:-./}
     # Read last modification time stamp.
     {builtin zstat +mtime -A mtime $chk}&>$CMD_NULL
