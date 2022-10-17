@@ -17,11 +17,10 @@ if [[ ${zsh_loaded_plugins[-1]} != */command-server && -z ${fpath[(r)${0:h}]} ]]
 # Standard hash for plugins, to not pollute the namespace
 typeset -gA Plugins
 Plugins+=( CMD_DIR "${0:h}"
-    CMD_CONF_INTERVAL "${CMD_CONF_INTERVAL:=5}"
+    CMD_CONF_INTERVAL "${CMD_CONF_INTERVAL:=70}"
     CMD_COMMAND_PATH "$CMD_COMMAND_PATH"
     CMD_CONF_ARGS "$CMD_CONF_ARGS"
-    CMD_CONF_PAUSE_AFTER "${CMD_CONF_PAUSE_AFTER:=30}" 
-    CMD_CONF_SETUP_ALIAS "$CMD_CONF_SETUP_ALIAS" )
+)
 
 # Make the variables used by command-server exported.
 export CMD_DIR="${0:h}" CMD_NULL=${CMD_NULL:-/dev/null} CMD_CONF_INTERVAL \

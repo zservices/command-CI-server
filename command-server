@@ -37,11 +37,8 @@ src_dirs=( $reply )
 
 # Save the processed value and other Plugins hash fields.
 Plugins[CMD_COMMAND_PATH]=$FILT_COMMAND_PATH
-Plugins[CMD_CONF_INTERVAL]=${CMD_CONF_INTERVAL:=5}
 
-#
-# Establish command binary to use.
-#
+Plugins[CMD_CONF_INTERVAL]=${CMD_CONF_INTERVAL:=70}
 
 #
 # Main loop
