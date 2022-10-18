@@ -12,24 +12,29 @@ local -TU CMD_PATH=$CMD_COMMAND_PATH cmd_path
 csrv-filter-dirs $verbose $cmd_path || return 1
 
 (( ! $#reply ))&&{
-    msg {208}Error:%f%b No command dirs found, set {39}\$CMD_COMMAND_PATH
+    msg {208}Error:%f%b No command dirs found, set {39}\$CMD_COMMAND_PATH%f \
+    first
     return 3
 }
 
 items=( $^cmd_path/*.(ini|cmd)(N) )
 (( ! $#items ))&&{
-    msg {208}Error:%f%b No commands found in {39}CMD_COMMAND_PATH%f%b \
-        \(={40}${${(j:%f,\{40\} :)items}:-%fempty}\).
+    msg {208}Error:%f%b No commands found in {39}CMD_COMMAND_PATH%f%b
     return 5
 }
 
 local -aU pth
-local q p
+local q p i
 pth=( ${items:h} )
 for q in $pth; do
     msg In {203}%B$q%f%b:
     for p in ${(M)items:#$q/*}; do
-        msg - {39}${p##$q/##}%f,
+        Opts=()
+        @str-read-toml $p Opts
+        i=
+        [[ $Opts[main__disabled] == (1|yes|true) ]] && u=" {203}disabled%f,"
+        [[ $Opts[main__disabled] == manual ]] && u=" {208}manual only%f,"
+        msg - {39}${p##$q/##}%f,$u
     done
 done
 

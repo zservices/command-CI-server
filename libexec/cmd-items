@@ -22,7 +22,8 @@ csrv-items-parse-opts() {
 }
 
 csrv-items-usage() {
-    msg The \`{40}%f\` subcommand runs the {208}Universal Ctags%f \
+    msg The \`{40}items%f\` subcommand shows the commands found in \
+        {41}\$CMD_COMMAND_PATH%f directory.
 }
 
 # Init code, options and usage.
