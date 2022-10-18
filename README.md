@@ -1,40 +1,68 @@
-# command-server
+# command-CI-server
 
-Make server that runs in background for configured projects and periodically
-builds them (i.e.: executes `make`) catching their outputs and exposing them
-interactively via `zmake` command.
+The command-CI-server is an utility that allows to:
+- define a command precisely via an `ini` definition file,
+- run the command periodically in background,
+- run it manually via `cmd run …` command.
 
-If your project's build is started earlier in the background, `zmake` will
-show and follow its output. If it finished, it'll show its output without
-blocking of terminal. You can also request last log of given *type*, i.e.:
+The command can have any output/input redirected in a flexible
+manner and also its run directory set, plus some other settings
+(like e.g.: an `if` condition throttling its execution).
 
-- last successful, non-null build: `zmake -c/--clean`,
-- last null build (no actions taken by the `Makefile`/`make`): `zmake -n/--null`,
-- last warning-only build: `zmake -w/--warn`,
-- last error build: `zmake -e/--err`.
+## Command Definition Files
 
-`make-server` remembers last log output for each o the kinds above.
+If a file called `CMD.ini` will be found in `~/.config/cmds`
+it'll be executed in background in configured interval. An
+example definition file that runs `ctags`:
+
+```ini
+[vars]
+q=$HOME/github/zinit
+
+[main]
+type=binary
+shell=
+runnable=ctags -R -e -G
+run-path=%q
+disabled=no
+
+[args]
+arg-1=--options=%q/zsh.ctags
+arg-2=--maxdepth=1
+arg-3=--languages=zsh
+arg-4=%q
+
+[io]
+in=stdin
+out=[!%q/ctags.out,stdout]
+err=[!%q/ctags.out,stdout]
+
+[activation]
+on-update-of=%q/config.h
+if=\"$(type -w ctags)\" == \"ctags: command\"
+interval=70
+```
+
+The file is self commenting. The `on-update-of` field defines
+a file whose modification time will be examined for any change.
+If no such change occurs then the interval will be used to run
+the command every `interval` of seconds, **if** also the `if`
+condition is meet. Otherwise, a manual run of the command can
+be performed via a command: `cmd run ctags`. As it can be
+seen the command will be run in directory given in `run-path`,
+via a variable `%q`, which points to a `~/github/zinit` directory.
 
 ## Log files
 
-`make-server` outputs messages that are forwarded to *two* different
+Commands output messages that are forwarded to *two* different
 locations:
 
-- `~/.cache/makesrv/make.log`,
-- `{path to the plugin directory}/make.log`.
+- `~/.cache/command/cmd.log`,
+- `{path to the server directory}/cmd.log`.
 
-If you run the `make-server` command manually, the logs go to the
+If you run the `command-server` command manually, the logs go to the
 standard output.
 
-## TL;DR Documentation
-
-- [zmake](https://github.com/zservices/make-server/blob/main/doc/zmake.md) -
-  tool to interface with the background service,
-- [make-server](https://github.com/zservices/make-server/blob/main/doc/make-server.md) -
-  the background build service.
-
-You can use `Zinit`'s service feature to run exaclty one copy of the build
-service process (see next section) or run it yourself simply via `./make-server`.
 
 ## [zinit](https://github.com/zdharma-continuum/zinit)
 
@@ -43,14 +71,12 @@ that supports loading single plugin instance per all active Zsh sessions,
 in background. For example, `Zinit` supports this, add:
 
 ```zsh
-zinit lucid service'make' param'MSERV_CONF_DIRS→~/Dokumenty/neo-mc:~/github/tig;
-        MSERV_CONF_SETUP_ALIAS→1; MSERV_CONF_INTERVAL→10' for \
-            zservices/make-server
+zinit lucid service'cmd' param'CMD_COMMAND_PATH→~/cmds; CMD_INTERVAL→70' for \
+            zservices/command-server
 ```
 
-to `~/.zshrc` to have `make-server` automatically run in background in one of
-your zsh sessions, with `make` aliased to `zmake` to little help with muscle
-memory, with 10 seconds between each build.
+to `~/.zshrc` to have `command-server` automatically run in background in one of
+your zsh sessions, with 70 seconds between each run of any command done by it.
 
 ## Explanation of Zsh-spawned services
 
