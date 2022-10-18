@@ -57,8 +57,8 @@ via a variable `%q`, which points to a `~/github/zinit` directory.
 Commands output messages that are forwarded to *two* different
 locations:
 
-- `~/.cache/command/cmd.log`,
-- `{path to the server directory}/cmd.log`.
+- `~/.cache/commandsrv/cmd.log`,
+- `{path to the command-server directory}/cmd.log`.
 
 If you run the `command-server` command manually, the logs go to the
 standard output.
