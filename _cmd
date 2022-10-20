@@ -1,0 +1,50 @@
+#compdef cmd
+
+setopt localoptions warncreateglobal typesetsilent
+
+local curcontext="$curcontext" state state_descr line ret=1
+local -a expl
+
+typeset -a commands
+commands=(
+    run:'Execute a command'
+    edit:'Edit a command'
+    cat:'Display a command'
+    items:'Show available commands'
+    ctags:'Generate Emacs TAGS file'
+    examine:'Test if a command should be run and execute'
+    log:"Show command output"
+    stat:'Show command status'
+)
+
+_arguments -C \
+    '1: :->command'\
+    '*: :->argument' && ret=0
+
+case $state in
+    command)
+        _describe -t commands "command-CI-server commands" commands && ret=0
+        ;;
+
+    argument)
+        case $words[2] in
+            run|log|stat|edit|cat|examine)
+                # Find commands
+                local -TU CMD_PATH=$CMD_COMMAND_PATH cmd_path
+                local -a items
+                (( ! $#cmd_path ))&&return 3
+
+                items=( $^cmd_path/*.(ini|cmd)(N:t:r) )
+                (( ! $#items ))&&return 5
+
+                _wanted plugins expl "-- Command --" \
+                    compadd "$@" -a - items && \
+                        ret=0
+                ;;
+           *)
+                ret=1
+                ;;
+        esac
+esac
+
+return $ret

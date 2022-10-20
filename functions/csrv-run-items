@@ -24,7 +24,7 @@ items=( $^cmd_path/*.(ini|cmd)(N) )
 }
 
 local -aU pth
-local q p i
+local q p i u
 pth=( ${items:h} )
 for q in $pth; do
     msg In {203}%B$q%f%b:
