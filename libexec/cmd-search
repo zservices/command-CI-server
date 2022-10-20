@@ -1,0 +1,48 @@
+#!/usr/bin/env zsh
+# -*- mode: sh; sh-indentation: 4; indent-tabs-mode: nil; sh-basic-offset: 4; -*-
+
+# Copyright (c) 2022 Sebastian Gniazdowski
+
+# Bootstrap complete exec environment.
+builtin emulate -L zsh
+0=${${0:#$ZSH_ARGZERO}:-${(%):-%N}}
+0=${${(M)0##/*}:-$PWD/${0#./}}
+source $0:h:h/lib/common.snip.zsh cmd-run $0:h:h
+
+local -A Options
+local -a opt_help opt_o opt_v
+integer verbose
+csrv-items-parse-opts() {
+    reply=()
+    builtin zparseopts -D -E -A Options -- \
+            -long=opt_o l=opt_o \
+            -verbose=opt_v v=opt_v \
+            -help=opt_help h=opt_help || return 7
+    reply=("$@")
+}
+
+csrv-items-usage() {
+    msg The \`{40}items%f\` subcommand shows the commands found in \
+        {41}\$CMD_COMMAND_PATH%f directory.
+}
+
+# Init code, options and usage.
+csrv-items-parse-opts "$@"||return $?
+(($#opt_help)) && {csrv-items-usage; return 0;}
+
+# Reduce some options to one flag field.
+(( $+Options[--long] )) && Options[-l]=
+(( $+Options[--verbose] )) && Options[-v]=
+
+# The main line of code. $reply are non-option args.
+repeat 1 {csrv-run-search Options $reply; integer exit_code=$?;}
+
+if ((exit_code)); then
+    ((verbose))&&msg {208}Warning: %fnon-zero exit code %B{41}$exit_code%f%b \
+        from %B{39}search%f%b operation
+fi
+
+# Between 1…9 means that index has been updated, despite problems.
+return exit_code
+
+# vim:ft=zsh:tw=80:sw=4:sts=4:et:foldmarker=[[[,]]]
