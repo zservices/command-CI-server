@@ -1,0 +1,34 @@
+#!/usr/bin/env zsh
+# -*- mode: sh; sh-indentation: 4; indent-tabs-mode: nil; sh-basic-offset: 4; -*-
+
+# Copyright (c) 2022 Sebastian Gniazdowski
+
+# Bootstrap complete exec environment.
+builtin emulate -L zsh
+0=${${0:#$ZSH_ARGZERO}:-${(%):-%N}}
+0=${${(M)0##/*}:-$PWD/${0#./}}
+source $0:h:h/lib/common.snip.zsh cmd-run $0:h:h
+
+local -a cmds=( $@ ) cmd_names=( $@:t:r )
+integer q exit_code=1
+local cmd text
+
+for cmd in $cmds; do
+    q+=1
+    csrv-check-file "$cmd" command || return $?
+    cmds[q]=$REPLY
+    [[ -z $text ]]&&text="cmd run -q $REPLY"||text+="| cmd run -q $REPLY"
+done
+
+#
+# Run cmd catching its output.
+#
+
+repeat 1 { eval $text;}
+msg $text
+msg {140}Commands %B{39}${(j:, :)cmds}%b{140} executed and \
+        returned with code: {41}$exit_code
+return exit_code
+
+# vim:ft=zsh:tw=80:sw=4:sts=4:et:foldmarker=[[[,]]]
+

@@ -9,8 +9,23 @@ builtin emulate -L zsh
 0=${${(M)0##/*}:-$PWD/${0#./}}
 source $0:h:h/lib/common.snip.zsh cmd-run $0:h:h
 
+
+local -A Options
+local -a opt_help opt_q
+integer verbose
+csrv-ctags-parse-opts() {
+    reply=()
+    builtin zparseopts -D -E -A Options -- \
+            -quiet=opt_q q=opt_q \
+            -help=opt_help h=opt_help || return 7
+    reply=("$@")
+}
+
+csrv-ctags-parse-opts "$@" || return $?
+
+set -- "$reply[@]"
 local cmd=$1 cmd_name=$1:t:r
-integer exit_code=1
+integer exit_code
 
 csrv-check-file "$cmd" command || return $?
 cmd=$REPLY
@@ -49,8 +64,8 @@ wait $REPLY
 exit_code+=$?
 state $cmd $cmd_name finished RET:$exit_code $outfile
 
-msg {140}Command %B{39}${(U)cmd_name}%b{140} executed and returned with code: \
-        {41}$exit_code
+(($#opt_q))||msg {140}Command %B{39}${(U)cmd_name}%b{140} executed and \
+                returned with code: {41}$exit_code
 return exit_code
 
 # vim:ft=zsh:tw=80:sw=4:sts=4:et:foldmarker=[[[,]]]
