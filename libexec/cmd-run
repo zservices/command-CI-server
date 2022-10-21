@@ -49,6 +49,8 @@ wait $REPLY
 exit_code+=$?
 state $cmd $cmd_name finished RET:$exit_code $outfile
 
+msg {140}Command %B{39}${(U)cmd_name}%b{140} executed and returned with code: \
+        {41}$exit_code
 return exit_code
 
 # vim:ft=zsh:tw=80:sw=4:sts=4:et:foldmarker=[[[,]]]

@@ -15,6 +15,26 @@ CACHE+=/commandsrv
 # Create cacbe dir.
 command mkdir -p $CACHE
 
+# Include
+if [[ -n $Config[main__include] ]]; then
+    local -a files inc=(${${(@z)Config[main__include]}:r})
+    local q
+    local -A Other
+    local -TU CMD_PATH=$CMD_COMMAND_PATH cmd_path
+    if csrv-filter-dirs 0 $cmd_path; then
+        files=( $^reply/*.(cmd|ini)(N) )
+        for q in $inc; do
+            q=${(M)files[@]:#*/$q.(ini|cmd)}
+            Other=()
+            @str-read-toml $q Other || {
+                msg {203}Warning:{174} problems reading command definition \
+                    \(file: {41}$q{174}
+            }
+            Config=( "${(@kv)Other}" "${(@kv)Config}" )
+        done
+    fi
+fi
+
 # Get the run entity.
 local cmd=$Config[main__runnable] tpe=$Config[main__type]
 Config[x_ini_loc]=$cmd_name
@@ -50,7 +70,16 @@ text=( "$reply[@]" )
         command mkdir -p $runpath
         builtin cd -q $runpath
     fi
+    # Run any deps
+    if [[ -n $Config[main__deps] ]]; then
+        local -a eps=(${(@z)Config[main__deps]})
+        local q
+        for q in $eps; do
+            repeat 1 {cmd run $q;}
+        done
+    fi
     repeat 1 { builtin eval "$text[@]"; }
+    return $?
 ) &
 # Save the PID of the background command
 local tmp=$!-$? key=CMD_${(U)cmd}_PID

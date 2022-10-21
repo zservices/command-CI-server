@@ -10,7 +10,7 @@ local qdir
 for qdir in $in_src_dirs; do
     tmp=( $qdir/*.(ini|cmd)(N) )
     if [[ ! -d $qdir || ! -r $qdir ]]; then
-        ((verbose))&&msg {208}Error{39}:{70} Directory \`{39}$qdir{70}\` \
+        ((verbose))&&msg {208}Warning{39}:{70} Directory \`{39}$qdir{70}\` \
             doesn\'t exist, skipping it…
     else
         if [[ -z $tmp ]]; then
