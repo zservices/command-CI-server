@@ -20,14 +20,17 @@ for cmd in $cmds; do
     [[ -z $text ]]&&text="cmd run -q $REPLY"||text+="| cmd run -q $REPLY"
 done
 
+text+="; q=( \$pipestatus )"
+
 #
 # Run cmd catching its output.
 #
 
+local -a q
 repeat 1 { eval $text;}
-msg $text
-msg {140}Commands %B{39}${(j:, :)cmds}%b{140} executed and \
-        returned with code: {41}$exit_code
+
+msg {140}Commands: %B{39}${(j:, :)${cmds/(#s)$HOME/\~}}%b{140} executed and \
+        returned with codes: {41}${(j:,:)q}
 return exit_code
 
 # vim:ft=zsh:tw=80:sw=4:sts=4:et:foldmarker=[[[,]]]
