@@ -12,8 +12,7 @@ source $0:h:h/lib/common.snip.zsh cmd $0:h:h
 local subcmd=$1
 shift
 warn() {
-    print -P %F{208}Error: command $subcmd binary \(%F{39}cmd-$subcmd{208}\) \
-        not found, exiting doing nothing.
+    msg {208}Error: no such subcommand \`{39}$subcmd{208}\` found
 }
 
 case $subcmd in
@@ -25,8 +24,16 @@ case $subcmd in
             if [[ -x $libexec/cmd-$subcmd ]]; then
                 command $libexec/cmd-$subcmd "$@"
             else
-                warn
-                return 1
+                local -TU CMD_COMMAND_PATH q
+                local -a arr
+                arr=( $^q/*.(ini|cmd)(N:t:r) )
+                arr=( ${(M)arr:#$subcmd} )
+                if (( $#arr )); then
+                    command $libexec/cmd-run $subcmd "$@"
+                else
+                    warn
+                    return 1
+                fi
             fi
         else
             warn
