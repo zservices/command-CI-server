@@ -23,6 +23,8 @@ _arguments -C \
 
 case $state in
     command)
+        local -a cmd_path=( ${(s.:.)CMD_COMMAND_PATH} )
+        commands+=( $^cmd_path/*.(ini|cmd)(:t:rN) )
         _describe -t commands "command-CI-server commands" commands && ret=0
         ;;
 
