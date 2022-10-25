@@ -36,12 +36,9 @@ text+="; q=( \$pipestatus )"
 # Run cmd catching its output.
 #
 
-local -a q
 repeat 1 { eval $text;}
 
-msg {140}Commands: %B{39}${(j:, :)${cmds/(#s)$HOME/\~}}%b{140} executed and \
-        returned with codes: {41}${(j:,:)q}
-return exit_code
+return $?
 
 # vim:ft=zsh:tw=80:sw=4:sts=4:et:foldmarker=[[[,]]]
 

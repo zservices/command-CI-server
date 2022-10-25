@@ -15,6 +15,7 @@ commands=(
     examine:'Test if a command should be run and execute'
     log:"Show command output"
     stat:'Show command status'
+    new:'Create a new command'
 )
 
 _arguments -C \
