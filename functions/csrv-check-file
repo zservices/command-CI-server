@@ -1,5 +1,7 @@
 #!/usr/bin/env zsh
 
+[[ $1 == -q ]]&&{local quiet=1;shift;}
+
 local cmd=$1 tpe=$2
 
 # No def file given?
@@ -62,7 +64,7 @@ for q in $dirs; do
 done
 
 if [[ -z $REPLY ]]; then
-    msg {203}Error:{41} No command definition for %B\`{39}${(U)cmd}{41}\`%b \
+    ((quiet))||msg {203}Error:{41} No command definition for %B\`{39}${(U)cmd}{41}\`%b \
             found, exiting…
     return 1
 fi

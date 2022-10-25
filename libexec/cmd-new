@@ -1,0 +1,47 @@
+#!/usr/bin/env zsh
+# -*- mode: sh; sh-indentation: 4; indent-tabs-mode: nil; sh-basic-offset: 4; -*-
+
+# Copyright (c) 2022 Sebastian Gniazdowski
+
+# Bootstrap complete exec environment.
+builtin emulate -L zsh
+0=${${0:#$ZSH_ARGZERO}:-${(%):-%N}}
+0=${${(M)0##/*}:-$PWD/${0#./}}
+source $0:h:h/lib/common.snip.zsh cmd-run $0:h:h
+
+local q=$1 cmd
+local -a cmds=( $@[2,-1] ) matched
+local -TU CMD_PATH=$CMD_COMMAND_PATH cmd_path
+if ! csrv-filter-dirs 0 $cmd_path; then
+    return 1
+fi
+cmd_path=( $reply )
+for cmd in $cmds; do
+    csrv-check-file -q "$cmd" command && {
+        msg {203}Warning:%f command $cmd already exists at $REPLY, skipping it…
+        continue
+    }
+
+    matched=( ${(M)cmd_path:#*$q*} )
+    if (( !$#matched )); then
+        msg {203}Error:%f no command dir matches {41}$q%f, exiting…
+        return 1
+    fi
+    command cp -v $CMD_DIR/examples/template.ini $matched[1]/$cmd:r.ini
+done
+
+text+="; q=( \$pipestatus )"
+
+#
+# Run cmd catching its output.
+#
+
+local -a q
+repeat 1 { eval $text;}
+
+msg {140}Commands: %B{39}${(j:, :)${cmds/(#s)$HOME/\~}}%b{140} executed and \
+        returned with codes: {41}${(j:,:)q}
+return exit_code
+
+# vim:ft=zsh:tw=80:sw=4:sts=4:et:foldmarker=[[[,]]]
+
